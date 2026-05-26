@@ -1,0 +1,30 @@
+import { ImageViewerOptions } from './types';
+export declare class ImageViewer {
+    private options;
+    private container;
+    private mainCanvas;
+    private thumbCanvas;
+    private mainCtx;
+    private thumbCtx;
+    private currentIndex;
+    private imageList;
+    private imageState;
+    private isDragging;
+    private lastX;
+    private lastY;
+    constructor(options: ImageViewerOptions);
+    private initCanvas;
+    private loadImages;
+    private renderAll;
+    private renderMainImage;
+    private renderThumbnails;
+    private bindEvents;
+    prev(): void;
+    next(): void;
+    rotate(): void;
+    resetView(): void;
+    getCurrentIndex(): number;
+    setCurrentIndex(index: number): void;
+    getImageCount(): number;
+    destroy(): void;
+}

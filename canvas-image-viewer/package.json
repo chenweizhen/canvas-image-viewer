@@ -1,0 +1,39 @@
+{
+  "name": "canvas-image-viewer",
+  "version": "1.0.0",
+  "description": "A pure Canvas-based image viewer library with no framework dependencies",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/canvas-image-viewer.cjs",
+  "module": "./dist/canvas-image-viewer.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/canvas-image-viewer.js",
+      "require": "./dist/canvas-image-viewer.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "canvas",
+    "image",
+    "viewer",
+    "gallery",
+    "photo",
+    "viewer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14",
+    "vite-plugin-dts": "^5.0.1"
+  }
+}

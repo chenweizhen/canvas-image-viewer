@@ -1,0 +1,4 @@
+packages:
+  - canvas-image-viewer
+  - canvas-image-viewer-vue3
+  - canvas-image-viewer-react
