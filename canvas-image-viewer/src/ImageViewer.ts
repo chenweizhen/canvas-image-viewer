@@ -6,6 +6,9 @@ export class ImageViewer {
   private container: HTMLElement
   private mainCanvas!: HTMLCanvasElement
   private thumbCanvas!: HTMLCanvasElement
+  private overviewCanvas!: HTMLCanvasElement
+  private overviewCtx!: CanvasRenderingContext2D
+  private overviewContainer!: HTMLElement
   private mainCtx!: CanvasRenderingContext2D
   private thumbCtx!: CanvasRenderingContext2D
   private toolbarContainer!: HTMLElement
@@ -15,8 +18,10 @@ export class ImageViewer {
   private fitBtn!: HTMLButtonElement
   private fullscreenBtn!: HTMLButtonElement
   private showThumbnails = true
+  private showOverview = true
   private isFitMode = true
   private isFullscreen = false
+  private isDraggingOverview = false
 
   private currentIndex = 0
   private imageList: HTMLImageElement[] = []
@@ -28,6 +33,7 @@ export class ImageViewer {
 
   private readonly TW = 80
   private readonly TH = 45
+  private readonly OVERVIEW_SIZE = 150
 
   constructor(options: ImageViewerOptions) {
     this.options = Object.assign({
@@ -294,9 +300,60 @@ export class ImageViewer {
     this.toolbarContainer.appendChild(centerSection)
     this.toolbarContainer.appendChild(rightSection)
 
+    this.overviewContainer = document.createElement('div')
+    this.overviewContainer.style.position = 'absolute'
+    this.overviewContainer.style.bottom = (this.options.toolbarHeight + this.options.thumbnailHeight + 10) + 'px'
+    this.overviewContainer.style.right = '10px'
+    this.overviewContainer.style.width = (this.OVERVIEW_SIZE + 12) + 'px'
+    this.overviewContainer.style.background = '#2a2a2a'
+    this.overviewContainer.style.border = '1px solid #3a3a3a'
+    this.overviewContainer.style.borderRadius = '4px'
+    this.overviewContainer.style.padding = '4px'
+
+    const overviewHeader = document.createElement('div')
+    overviewHeader.style.display = 'flex'
+    overviewHeader.style.justifyContent = 'space-between'
+    overviewHeader.style.alignItems = 'center'
+    overviewHeader.style.padding = '2px 4px'
+    overviewHeader.style.marginBottom = '4px'
+
+    const overviewTitle = document.createElement('span')
+    overviewTitle.style.color = '#888888'
+    overviewTitle.style.fontSize = '12px'
+    overviewTitle.textContent = '鸟瞰图'
+    overviewHeader.appendChild(overviewTitle)
+
+    const overviewCloseBtn = document.createElement('button')
+    overviewCloseBtn.innerHTML = Icons.Close
+    overviewCloseBtn.style.background = 'transparent'
+    overviewCloseBtn.style.border = 'none'
+    overviewCloseBtn.style.color = '#888888'
+    overviewCloseBtn.style.fontSize = '12px'
+    overviewCloseBtn.style.width = '16px'
+    overviewCloseBtn.style.height = '16px'
+    overviewCloseBtn.style.cursor = 'pointer'
+    overviewCloseBtn.title = '关闭鸟瞰图'
+    overviewCloseBtn.addEventListener('mouseenter', () => { overviewCloseBtn.style.color = '#ffffff' })
+    overviewCloseBtn.addEventListener('mouseleave', () => { overviewCloseBtn.style.color = '#888888' })
+    overviewCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.toggleOverview()
+    })
+    overviewHeader.appendChild(overviewCloseBtn)
+    this.overviewContainer.appendChild(overviewHeader)
+
+    this.overviewCanvas = document.createElement('canvas')
+    this.overviewCanvas.width = this.OVERVIEW_SIZE
+    this.overviewCanvas.height = this.OVERVIEW_SIZE
+    this.overviewCanvas.style.cursor = 'move'
+    this.overviewCanvas.style.background = '#1e1e1e'
+    this.overviewCtx = this.overviewCanvas.getContext('2d')!
+    this.overviewContainer.appendChild(this.overviewCanvas)
+
     this.container.appendChild(this.mainCanvas)
     this.container.appendChild(this.thumbScrollContainer)
     this.container.appendChild(this.toolbarContainer)
+    this.container.appendChild(this.overviewContainer)
   }
 
   private createToolbarButton(iconName: keyof typeof Icons, onClick: () => void): HTMLButtonElement {
@@ -368,6 +425,7 @@ export class ImageViewer {
     ctx.restore()
 
     this.updateScaleDisplay()
+    this.renderOverview()
   }
 
   private renderThumbnails() {
@@ -455,10 +513,25 @@ export class ImageViewer {
     this.mainCanvas.addEventListener('wheel', (e) => {
       e.preventDefault()
       const delta = e.deltaY > 0 ? 0.9 : 1.1
-      const newScale = this.imageState.scale * delta
+      const newScale = Math.max(0.1, Math.min(10, this.imageState.scale * delta))
 
-      if (newScale >= 0.1 && newScale <= 10) {
+      if (newScale !== this.imageState.scale) {
+        const rect = this.mainCanvas.getBoundingClientRect()
+        const mouseX = e.clientX - rect.left
+        const mouseY = e.clientY - rect.top
+
+        const canvasCenterX = this.mainCanvas.width / 2
+        const canvasCenterY = this.mainCanvas.height / 2
+
+        const imageX = mouseX - canvasCenterX - this.imageState.x
+        const imageY = mouseY - canvasCenterY - this.imageState.y
+
+        const scaleDiff = newScale / this.imageState.scale
+
+        this.imageState.x = mouseX - canvasCenterX - imageX * scaleDiff
+        this.imageState.y = mouseY - canvasCenterY - imageY * scaleDiff
         this.imageState.scale = newScale
+
         this.isFitMode = false
         this.updateFitButton()
         this.renderMainImage()
@@ -477,6 +550,58 @@ export class ImageViewer {
       if (wasFullscreen !== this.isFullscreen) {
         this.updateFullscreenButton()
         this.handleFullscreenResize()
+      }
+    })
+
+    this.overviewCanvas.addEventListener('mousedown', (e) => {
+      e.stopPropagation()
+      this.isDraggingOverview = true
+      this.lastX = e.clientX
+      this.lastY = e.clientY
+    })
+
+    window.addEventListener('mousemove', (e) => {
+      if (!this.isDraggingOverview) return
+
+      const rect = this.overviewCanvas.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+
+      const img = this.imageList[this.currentIndex]
+      if (!img) return
+
+      const imgRatio = img.width / img.height
+      const canvasRatio = this.overviewCanvas.width / this.overviewCanvas.height
+
+      let drawW: number
+      let drawH: number
+
+      if (imgRatio > canvasRatio) {
+        drawW = this.overviewCanvas.width
+        drawH = this.overviewCanvas.width / imgRatio
+      } else {
+        drawH = this.overviewCanvas.height
+        drawW = this.overviewCanvas.height * imgRatio
+      }
+
+      const scaleX = img.width / drawW
+      const scaleY = img.height / drawH
+
+      const deltaX = (e.clientX - this.lastX) * scaleX
+      const deltaY = (e.clientY - this.lastY) * scaleY
+
+      this.imageState.x -= deltaX * this.imageState.scale
+      this.imageState.y -= deltaY * this.imageState.scale
+
+      this.lastX = e.clientX
+      this.lastY = e.clientY
+
+      this.renderMainImage()
+    })
+
+    window.addEventListener('mouseup', () => {
+      if (this.isDraggingOverview) {
+        this.isDraggingOverview = false
       }
     })
   }
@@ -769,6 +894,74 @@ export class ImageViewer {
         this.resetView()
       }
     }
+  }
+
+  public toggleOverview() {
+    this.showOverview = !this.showOverview
+    this.overviewContainer.style.display = this.showOverview ? 'block' : 'none'
+  }
+
+  public renderOverview() {
+    if (!this.showOverview) return
+
+    const ctx = this.overviewCtx
+    const canvas = this.overviewCanvas
+    const img = this.imageList[this.currentIndex]
+
+    if (!img) return
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    const imgRatio = img.width / img.height
+    const canvasRatio = canvas.width / canvas.height
+
+    let drawW: number
+    let drawH: number
+    let drawX = 0
+    let drawY = 0
+
+    if (imgRatio > canvasRatio) {
+      drawW = canvas.width
+      drawH = canvas.width / imgRatio
+      drawY = (canvas.height - drawH) / 2
+    } else {
+      drawH = canvas.height
+      drawW = canvas.height * imgRatio
+      drawX = (canvas.width - drawW) / 2
+    }
+
+    ctx.drawImage(img, drawX, drawY, drawW, drawH)
+
+    const state = this.imageState
+    const scale = state.scale
+    const mainW = this.mainCanvas.width
+    const mainH = this.mainCanvas.height
+
+    const imgDisplayW = img.width * scale
+    const imgDisplayH = img.height * scale
+
+    const canvasCenterX = mainW / 2
+    const canvasCenterY = mainH / 2
+
+    const imgLeft = -imgDisplayW / 2 + state.x
+    const imgTop = -imgDisplayH / 2 + state.y
+
+    const visibleX = -imgLeft / scale
+    const visibleY = -imgTop / scale
+    const visibleW = mainW / scale
+    const visibleH = mainH / scale
+
+    const rectX = drawX + (visibleX / img.width) * drawW
+    const rectY = drawY + (visibleY / img.height) * drawH
+    const rectW = (visibleW / img.width) * drawW
+    const rectH = (visibleH / img.height) * drawH
+
+    ctx.fillStyle = 'rgba(0, 153, 255, 0.3)'
+    ctx.fillRect(rectX, rectY, rectW, rectH)
+
+    ctx.strokeStyle = '#0099ff'
+    ctx.lineWidth = 1
+    ctx.strokeRect(rectX, rectY, rectW, rectH)
   }
 
   public destroy() {

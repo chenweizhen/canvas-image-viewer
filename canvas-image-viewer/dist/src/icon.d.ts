@@ -1,4 +1,5 @@
 export declare const Icons: {
+    Close: string;
     ArrowDropDown: string;
     ArrowLeft: string;
     ArrowRight: string;

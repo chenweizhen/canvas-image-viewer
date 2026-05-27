@@ -1,5 +1,6 @@
 //#region src/icon.ts
 var e = {
+	Close: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z\"></path></svg>",
 	ArrowDropDown: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 15.0006L7.75732 10.758L9.17154 9.34375L12 12.1722L14.8284 9.34375L16.2426 10.758L12 15.0006Z\"></path></svg>",
 	ArrowLeft: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8.3685 12L13.1162 3.03212L14.8838 3.9679L10.6315 12L14.8838 20.0321L13.1162 20.9679L8.3685 12Z\"></path></svg>",
 	ArrowRight: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M15.6315 12L10.8838 3.03212L9.11622 3.9679L13.3685 12L9.11622 20.0321L10.8838 20.9679L15.6315 12Z\"></path></svg>",
@@ -19,12 +20,12 @@ var e = {
 	Delete: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z\"></path></svg>"
 }, t = class {
 	constructor(e) {
-		this.showThumbnails = !0, this.isFitMode = !0, this.isFullscreen = !1, this.currentIndex = 0, this.imageList = [], this.imageState = {
+		this.showThumbnails = !0, this.showOverview = !0, this.isFitMode = !0, this.isFullscreen = !1, this.isDraggingOverview = !1, this.currentIndex = 0, this.imageList = [], this.imageState = {
 			scale: 1,
 			x: 0,
 			y: 0,
 			rotation: 0
-		}, this.isDragging = !1, this.lastX = 0, this.lastY = 0, this.TW = 80, this.TH = 45, this.options = Object.assign({
+		}, this.isDragging = !1, this.lastX = 0, this.lastY = 0, this.TW = 80, this.TH = 45, this.OVERVIEW_SIZE = 150, this.options = Object.assign({
 			width: 1e3,
 			height: 650,
 			thumbnailHeight: 70,
@@ -113,7 +114,19 @@ var e = {
 		let _ = document.createElement("div");
 		_.style.display = "flex", _.style.alignItems = "center", _.style.gap = "8px";
 		let v = this.createToolbarButton("Slideshow", () => this.toggleThumbnails());
-		v.title = "切换缩略图显示", _.appendChild(v), this.fullscreenBtn = this.createToolbarButton("Fullscreen", () => this.toggleFullscreen()), this.fullscreenBtn.title = "切换全屏", _.appendChild(this.fullscreenBtn), this.toolbarContainer.appendChild(t), this.toolbarContainer.appendChild(n), this.toolbarContainer.appendChild(_), this.container.appendChild(this.mainCanvas), this.container.appendChild(this.thumbScrollContainer), this.container.appendChild(this.toolbarContainer);
+		v.title = "切换缩略图显示", _.appendChild(v), this.fullscreenBtn = this.createToolbarButton("Fullscreen", () => this.toggleFullscreen()), this.fullscreenBtn.title = "切换全屏", _.appendChild(this.fullscreenBtn), this.toolbarContainer.appendChild(t), this.toolbarContainer.appendChild(n), this.toolbarContainer.appendChild(_), this.overviewContainer = document.createElement("div"), this.overviewContainer.style.position = "absolute", this.overviewContainer.style.bottom = this.options.toolbarHeight + this.options.thumbnailHeight + 10 + "px", this.overviewContainer.style.right = "10px", this.overviewContainer.style.width = this.OVERVIEW_SIZE + 12 + "px", this.overviewContainer.style.background = "#2a2a2a", this.overviewContainer.style.border = "1px solid #3a3a3a", this.overviewContainer.style.borderRadius = "4px", this.overviewContainer.style.padding = "4px";
+		let y = document.createElement("div");
+		y.style.display = "flex", y.style.justifyContent = "space-between", y.style.alignItems = "center", y.style.padding = "2px 4px", y.style.marginBottom = "4px";
+		let b = document.createElement("span");
+		b.style.color = "#888888", b.style.fontSize = "12px", b.textContent = "鸟瞰图", y.appendChild(b);
+		let x = document.createElement("button");
+		x.innerHTML = e.Close, x.style.background = "transparent", x.style.border = "none", x.style.color = "#888888", x.style.fontSize = "12px", x.style.width = "16px", x.style.height = "16px", x.style.cursor = "pointer", x.title = "关闭鸟瞰图", x.addEventListener("mouseenter", () => {
+			x.style.color = "#ffffff";
+		}), x.addEventListener("mouseleave", () => {
+			x.style.color = "#888888";
+		}), x.addEventListener("click", (e) => {
+			e.stopPropagation(), this.toggleOverview();
+		}), y.appendChild(x), this.overviewContainer.appendChild(y), this.overviewCanvas = document.createElement("canvas"), this.overviewCanvas.width = this.OVERVIEW_SIZE, this.overviewCanvas.height = this.OVERVIEW_SIZE, this.overviewCanvas.style.cursor = "move", this.overviewCanvas.style.background = "#1e1e1e", this.overviewCtx = this.overviewCanvas.getContext("2d"), this.overviewContainer.appendChild(this.overviewCanvas), this.container.appendChild(this.mainCanvas), this.container.appendChild(this.thumbScrollContainer), this.container.appendChild(this.toolbarContainer), this.container.appendChild(this.overviewContainer);
 	}
 	createToolbarButton(t, n) {
 		let r = document.createElement("button");
@@ -143,7 +156,7 @@ var e = {
 		let r = this.imageState;
 		e.clearRect(0, 0, t.width, t.height), e.save(), e.translate(t.width / 2, t.height / 2), e.rotate(r.rotation * Math.PI / 180);
 		let i = n.width * r.scale, a = n.height * r.scale;
-		e.drawImage(n, -i / 2 + r.x, -a / 2 + r.y, i, a), e.restore(), this.updateScaleDisplay();
+		e.drawImage(n, -i / 2 + r.x, -a / 2 + r.y, i, a), e.restore(), this.updateScaleDisplay(), this.renderOverview();
 	}
 	renderThumbnails() {
 		let e = this.thumbCtx, t = this.thumbCanvas, n = this.imageList.length * (this.TW + 15) + 20;
@@ -166,13 +179,30 @@ var e = {
 			this.isDragging = !1, this.mainCanvas.style.cursor = "grab";
 		}), this.mainCanvas.addEventListener("wheel", (e) => {
 			e.preventDefault();
-			let t = e.deltaY > 0 ? .9 : 1.1, n = this.imageState.scale * t;
-			n >= .1 && n <= 10 && (this.imageState.scale = n, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage());
+			let t = e.deltaY > 0 ? .9 : 1.1, n = Math.max(.1, Math.min(10, this.imageState.scale * t));
+			if (n !== this.imageState.scale) {
+				let t = this.mainCanvas.getBoundingClientRect(), r = e.clientX - t.left, i = e.clientY - t.top, a = this.mainCanvas.width / 2, o = this.mainCanvas.height / 2, s = r - a - this.imageState.x, c = i - o - this.imageState.y, l = n / this.imageState.scale;
+				this.imageState.x = r - a - s * l, this.imageState.y = i - o - c * l, this.imageState.scale = n, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage();
+			}
 		}, { passive: !1 }), this.mainCanvas.addEventListener("mouseleave", () => {
 			this.isDragging = !1, this.mainCanvas.style.cursor = "grab";
 		}), document.addEventListener("fullscreenchange", () => {
 			let e = this.isFullscreen;
 			this.isFullscreen = !!document.fullscreenElement, e !== this.isFullscreen && (this.updateFullscreenButton(), this.handleFullscreenResize());
+		}), this.overviewCanvas.addEventListener("mousedown", (e) => {
+			e.stopPropagation(), this.isDraggingOverview = !0, this.lastX = e.clientX, this.lastY = e.clientY;
+		}), window.addEventListener("mousemove", (e) => {
+			if (!this.isDraggingOverview) return;
+			let t = this.overviewCanvas.getBoundingClientRect();
+			e.clientX - t.left, e.clientY - t.top;
+			let n = this.imageList[this.currentIndex];
+			if (!n) return;
+			let r = n.width / n.height, i = this.overviewCanvas.width / this.overviewCanvas.height, a, o;
+			r > i ? (a = this.overviewCanvas.width, o = this.overviewCanvas.width / r) : (o = this.overviewCanvas.height, a = this.overviewCanvas.height * r);
+			let s = n.width / a, c = n.height / o, l = (e.clientX - this.lastX) * s, u = (e.clientY - this.lastY) * c;
+			this.imageState.x -= l * this.imageState.scale, this.imageState.y -= u * this.imageState.scale, this.lastX = e.clientX, this.lastY = e.clientY, this.renderMainImage();
+		}), window.addEventListener("mouseup", () => {
+			this.isDraggingOverview &&= !1;
 		});
 	}
 	fillRoundRect(e, t, n, r, i, a) {
@@ -275,6 +305,21 @@ var e = {
 			this.container.style.width = e + "px", this.container.style.height = t + "px", this.container.style.position = "fixed", this.container.style.top = "0", this.container.style.left = "0", this.container.style.zIndex = "9999", this.mainCanvas.width = e, this.mainCanvas.height = t - this.options.thumbnailHeight - this.options.toolbarHeight, this.thumbScrollContainer.style.width = e + "px", this.thumbCanvas.width = Math.max(this.imageList.length * (this.TW + 15) + 20, e), this.thumbCanvas.height = this.options.thumbnailHeight, this.toolbarContainer.style.width = e + "px";
 		} else this.container.style.width = this.options.width + "px", this.container.style.height = this.options.height + "px", this.container.style.position = "relative", this.container.style.top = "auto", this.container.style.left = "auto", this.container.style.zIndex = "auto", this.mainCanvas.width = this.options.width, this.mainCanvas.height = this.options.height - this.options.thumbnailHeight - this.options.toolbarHeight, this.thumbScrollContainer.style.width = this.options.width + "px", this.thumbCanvas.width = Math.max(this.imageList.length * (this.TW + 15) + 20, this.options.width), this.thumbCanvas.height = this.options.thumbnailHeight, this.toolbarContainer.style.width = this.options.width + "px";
 		this.imageList.length > 0 && (this.renderThumbnails(), this.isFitMode ? this.fitToScreen() : this.resetView());
+	}
+	toggleOverview() {
+		this.showOverview = !this.showOverview, this.overviewContainer.style.display = this.showOverview ? "block" : "none";
+	}
+	renderOverview() {
+		if (!this.showOverview) return;
+		let e = this.overviewCtx, t = this.overviewCanvas, n = this.imageList[this.currentIndex];
+		if (!n) return;
+		e.clearRect(0, 0, t.width, t.height);
+		let r = n.width / n.height, i = t.width / t.height, a, o, s = 0, c = 0;
+		r > i ? (a = t.width, o = t.width / r, c = (t.height - o) / 2) : (o = t.height, a = t.height * r, s = (t.width - a) / 2), e.drawImage(n, s, c, a, o);
+		let l = this.imageState, u = l.scale, d = this.mainCanvas.width, f = this.mainCanvas.height, p = n.width * u, m = n.height * u;
+		d / 2, f / 2;
+		let h = -p / 2 + l.x, g = -m / 2 + l.y, _ = -h / u, v = -g / u, y = d / u, b = f / u, x = s + _ / n.width * a, S = c + v / n.height * o, C = y / n.width * a, w = b / n.height * o;
+		e.fillStyle = "rgba(0, 153, 255, 0.3)", e.fillRect(x, S, C, w), e.strokeStyle = "#0099ff", e.lineWidth = 1, e.strokeRect(x, S, C, w);
 	}
 	destroy() {
 		this.container.innerHTML = "", this.imageList = [], this.imageState = {

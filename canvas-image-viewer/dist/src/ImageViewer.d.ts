@@ -4,6 +4,9 @@ export declare class ImageViewer {
     private container;
     private mainCanvas;
     private thumbCanvas;
+    private overviewCanvas;
+    private overviewCtx;
+    private overviewContainer;
     private mainCtx;
     private thumbCtx;
     private toolbarContainer;
@@ -13,8 +16,10 @@ export declare class ImageViewer {
     private fitBtn;
     private fullscreenBtn;
     private showThumbnails;
+    private showOverview;
     private isFitMode;
     private isFullscreen;
+    private isDraggingOverview;
     private currentIndex;
     private imageList;
     private imageState;
@@ -23,6 +28,7 @@ export declare class ImageViewer {
     private lastY;
     private readonly TW;
     private readonly TH;
+    private readonly OVERVIEW_SIZE;
     constructor(options: ImageViewerOptions);
     private initCanvas;
     private createToolbarButton;
@@ -54,5 +60,7 @@ export declare class ImageViewer {
     toggleFullscreen(): void;
     private updateFullscreenButton;
     private handleFullscreenResize;
+    toggleOverview(): void;
+    renderOverview(): void;
     destroy(): void;
 }
