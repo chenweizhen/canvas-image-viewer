@@ -1,0 +1,19 @@
+export declare const Icons: {
+    ArrowDropDown: string;
+    ArrowLeft: string;
+    ArrowRight: string;
+    RotateLeft: string;
+    RotateRight: string;
+    ZoomIn: string;
+    ZoomOut: string;
+    Reset: string;
+    FlipHorizontal: string;
+    FlipVertical: string;
+    Slideshow: string;
+    AspectRatio: string;
+    FitToScreen: string;
+    Scroll: string;
+    Fullscreen: string;
+    FullscreenExit: string;
+    Delete: string;
+};

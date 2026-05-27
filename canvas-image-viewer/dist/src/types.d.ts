@@ -4,6 +4,9 @@ export interface ImageViewerOptions {
     width?: number;
     height?: number;
     thumbnailHeight?: number;
+    toolbarHeight?: number;
+    roundRadius?: number;
+    onDelete?: (index: number) => void;
 }
 export interface ImageState {
     scale: number;
