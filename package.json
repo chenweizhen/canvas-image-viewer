@@ -10,6 +10,9 @@
     "dev:vue": "pnpm --filter canvas-image-viewer-vue3 dev",
     "dev:react": "pnpm --filter canvas-image-viewer-react dev",
     "build:lib": "pnpm --filter canvas-image-viewer build",
-    "build:all": "pnpm --filter canvas-image-viewer build && pnpm --filter canvas-image-viewer-vue3 build && pnpm --filter canvas-image-viewer-react build"
+    "build:vue": "pnpm --filter canvas-image-viewer-vue3 build",
+    "build:react": "pnpm --filter canvas-image-viewer-react build",
+    "build:all": "pnpm run build:lib && pnpm run build:vue && pnpm run build:react",
+    "deploy": "powershell -ExecutionPolicy Bypass -File deploy.ps1"
   }
 }
