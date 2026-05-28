@@ -676,16 +676,40 @@ export class ImageViewer {
     }
   }
 
-  private updateImageInfo() {
-    const img = this.imageList[this.currentIndex]
-    if (!img) return
-
-    const src = img.src
-    const fileName = src.split('/').pop() || ''
-    const size = `${img.width}×${img.height}像素`
+  private formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B'
     
-    this.infoDisplay.textContent = `${fileName} ${size}`
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
+
+  private updateImageInfo() {
+  const img = this.imageList[this.currentIndex]
+  if (!img) return
+
+  const size = `${img.width}×${img.height}像素`
+  
+  if (img instanceof HTMLCanvasElement) {
+    const canvasSize = img.toDataURL('image/png').length * 0.75
+    const fileSize = this.formatFileSize(Math.round(canvasSize))
+    this.infoDisplay.textContent = `${fileSize} ${size}`
+  } else if (img.src.startsWith('blob:')) {
+    fetch(img.src)
+      .then(response => response.blob())
+      .then(blob => {
+        const fileSize = this.formatFileSize(blob.size)
+        this.infoDisplay.textContent = `${fileSize} ${size}`
+      })
+      .catch(() => {
+        this.infoDisplay.textContent = size
+      })
+  } else {
+    this.infoDisplay.textContent = size
+  }
+}
 
   private zoom(factor: number) {
     const newScale = this.imageState.scale * factor

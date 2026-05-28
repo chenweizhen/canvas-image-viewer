@@ -41,6 +41,7 @@ export declare class ImageViewer {
     private fillRoundRect;
     private updateScaleDisplay;
     private updatePageInfo;
+    private formatFileSize;
     private updateImageInfo;
     private zoom;
     private flipHorizontal;

@@ -222,11 +222,29 @@ var e = {
 		let e = this.toolbarContainer.querySelector("#page-info");
 		e && (e.textContent = `${this.currentIndex + 1}/${this.imageList.length}`);
 	}
+	formatFileSize(e) {
+		if (e === 0) return "0 B";
+		let t = 1024, n = [
+			"B",
+			"KB",
+			"MB",
+			"GB"
+		], r = Math.floor(Math.log(e) / Math.log(t));
+		return parseFloat((e / t ** r).toFixed(2)) + " " + n[r];
+	}
 	updateImageInfo() {
 		let e = this.imageList[this.currentIndex];
 		if (!e) return;
-		let t = e.src.split("/").pop() || "", n = `${e.width}×${e.height}像素`;
-		this.infoDisplay.textContent = `${t} ${n}`;
+		let t = `${e.width}×${e.height}像素`;
+		if (e instanceof HTMLCanvasElement) {
+			let n = e.toDataURL("image/png").length * .75, r = this.formatFileSize(Math.round(n));
+			this.infoDisplay.textContent = `${r} ${t}`;
+		} else e.src.startsWith("blob:") ? fetch(e.src).then((e) => e.blob()).then((e) => {
+			let n = this.formatFileSize(e.size);
+			this.infoDisplay.textContent = `${n} ${t}`;
+		}).catch(() => {
+			this.infoDisplay.textContent = t;
+		}) : this.infoDisplay.textContent = t;
 	}
 	zoom(e) {
 		let t = this.imageState.scale * e;
