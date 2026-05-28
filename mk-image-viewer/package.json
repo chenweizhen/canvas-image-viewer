@@ -1,5 +1,5 @@
 {
-  "name": "@mk/canvas-image-viewer",
+  "name": "mk-image-viewer",
   "version": "1.0.0",
   "description": "A pure Canvas-based image viewer library with no framework dependencies",
   "type": "module",
@@ -8,13 +8,13 @@
     "README.md",
     "LICENSE"
   ],
-  "main": "./dist/canvas-image-viewer.cjs",
-  "module": "./dist/canvas-image-viewer.js",
+  "main": "./dist/mk-image-viewer.cjs",
+  "module": "./dist/mk-image-viewer.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/canvas-image-viewer.js",
-      "require": "./dist/canvas-image-viewer.cjs",
+      "import": "./dist/mk-image-viewer.js",
+      "require": "./dist/mk-image-viewer.cjs",
       "types": "./dist/index.d.ts"
     }
   },
@@ -41,13 +41,13 @@
     "email": "chenweizhen@126.com"
   },
   "license": "MIT",
-  "homepage": "https://github.com/chenweizhen/canvas-image-viewer",
+  "homepage": "https://github.com/chenweizhen/mk-image-viewer",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chenweizhen/canvas-image-viewer.git"
+    "url": "git+https://github.com/chenweizhen/mk-image-viewer.git"
   },
   "bugs": {
-    "url": "https://github.com/chenweizhen/canvas-image-viewer/issues"
+    "url": "https://github.com/chenweizhen/mk-image-viewer/issues"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",

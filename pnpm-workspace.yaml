@@ -1,4 +1,6 @@
 packages:
-  - canvas-image-viewer
-  - canvas-image-viewer-vue3
-  - canvas-image-viewer-react
+  - mk-image-viewer
+  - mk-image-viewer-vue3
+  - mk-image-viewer-react
+overrides:
+  mk-image-viewer: link:C:/Users/IT001/AppData/Local/pnpm/global/5/node_modules/mk-image-viewer

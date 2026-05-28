@@ -2,17 +2,20 @@
   "name": "image-viewer-monorepo",
   "private": true,
   "workspaces": [
-    "canvas-image-viewer",
-    "canvas-image-viewer-vue3",
-    "canvas-image-viewer-react"
+    "mk-image-viewer",
+    "mk-image-viewer-vue3",
+    "mk-image-viewer-react"
   ],
   "scripts": {
-    "dev:vue": "pnpm --filter canvas-image-viewer-vue3 dev",
-    "dev:react": "pnpm --filter canvas-image-viewer-react dev",
-    "build:lib": "pnpm --filter canvas-image-viewer build",
-    "build:vue": "pnpm --filter canvas-image-viewer-vue3 build",
-    "build:react": "pnpm --filter canvas-image-viewer-react build",
+    "dev:vue": "pnpm --filter mk-image-viewer-vue3 dev",
+    "dev:react": "pnpm --filter mk-image-viewer-react dev",
+    "build:lib": "pnpm --filter mk-image-viewer build",
+    "build:vue": "pnpm --filter mk-image-viewer-vue3 build",
+    "build:react": "pnpm --filter mk-image-viewer-react build",
     "build:all": "pnpm run build:lib && pnpm run build:vue && pnpm run build:react",
     "release": "powershell -ExecutionPolicy Bypass -File deploy.ps1"
+  },
+  "dependencies": {
+    "mk-image-viewer": "link:C:/Users/IT001/AppData/Local/pnpm/global/5/node_modules/mk-image-viewer"
   }
 }

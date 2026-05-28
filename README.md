@@ -5,16 +5,16 @@
 ## 项目结构
 
 ```
-canvas-image-viewer/
-├── canvas-image-viewer/      # 核心库（发布到 npm）
+mk-image-viewer/
+├── mk-image-viewer/      # 核心库（发布到 npm）
 │   ├── dist/                 # 构建产物
 │   ├── src/                  # 源代码
 │   └── package.json
-├── canvas-image-viewer-react/ # React Demo
+├── mk-image-viewer-react/ # React Demo
 │   ├── dist/                 # 构建产物
 │   ├── src/                  # 源代码
 │   └── package.json
-└── canvas-image-viewer-vue3/  # Vue3 Demo
+└── mk-image-viewer-vue3/  # Vue3 Demo
     ├── dist/                 # 构建产物
     ├── src/                  # 源代码
     └── package.json
@@ -22,16 +22,16 @@ canvas-image-viewer/
 
 ## 核心库
 
-**canvas-image-viewer** 是一个纯 Canvas 实现的图片查看器库，无任何框架依赖。
+**mk-image-viewer** 是一个纯 Canvas 实现的图片查看器库，无任何框架依赖。
 
 ### 安装
 
 ```bash
-npm install canvas-image-viewer
+npm install mk-image-viewer
 # 或
-pnpm add canvas-image-viewer
+pnpm add mk-image-viewer
 # 或
-yarn add canvas-image-viewer
+yarn add mk-image-viewer
 ```
 
 ### 特性
@@ -49,8 +49,8 @@ yarn add canvas-image-viewer
 
 | Demo | 技术栈 | 说明 |
 |------|--------|------|
-| `canvas-image-viewer-react` | React + TypeScript | React 框架集成示例 |
-| `canvas-image-viewer-vue3` | Vue3 + TypeScript | Vue3 框架集成示例 |
+| `mk-image-viewer-react` | React + TypeScript | React 框架集成示例 |
+| `mk-image-viewer-vue3` | Vue3 + TypeScript | Vue3 框架集成示例 |
 
 ## 开发命令
 

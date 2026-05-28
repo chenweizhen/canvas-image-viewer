@@ -11,7 +11,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['canvas-image-viewer']
+      external: ['mk-image-viewer']
     }
   }
 })
