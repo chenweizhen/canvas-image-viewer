@@ -4,69 +4,66 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== 开始发布流程 ===" -ForegroundColor Cyan
+Write-Host "=== Starting deployment process ===" -ForegroundColor Cyan
 
-# 1. 构建所有项目
-Write-Host "`n1. 构建所有项目..." -ForegroundColor Yellow
+# 1. Build all projects
+Write-Host "`n1. Building all projects..." -ForegroundColor Yellow
 pnpm run build:all
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "构建失败！" -ForegroundColor Red
+    Write-Host "Build failed!" -ForegroundColor Red
     exit 1
 }
 
-# 2. 提交所有内容到 Gitee（main 分支）
-Write-Host "`n2. 提交源码到 Gitee..." -ForegroundColor Yellow
+# 2. Push all to Gitee (main branch)
+Write-Host "`n2. Pushing source code to Gitee..." -ForegroundColor Yellow
 git checkout main
 git add .
 git commit -m "chore: update source code"
 git push gitee main
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "推送 Gitee 失败！" -ForegroundColor Red
+    Write-Host "Failed to push to Gitee!" -ForegroundColor Red
     exit 1
 }
 
-# 3. 提交到 GitHub（release 分支，排除 src）
-Write-Host "`n3. 准备 GitHub release 分支..." -ForegroundColor Yellow
+# 3. Push to GitHub (release branch, exclude src)
+Write-Host "`n3. Preparing GitHub release branch..." -ForegroundColor Yellow
 
-# 检查是否存在 release 分支
 $branchExists = git branch --list release
 if (-not $branchExists) {
-    Write-Host "创建 release 分支..."
+    Write-Host "Creating release branch..."
     git checkout -b release
 } else {
-    Write-Host "切换到 release 分支..."
+    Write-Host "Switching to release branch..."
     git checkout release
 }
 
-# 合并 main 分支的最新更改
-Write-Host "合并 main 分支..."
+Write-Host "Merging main branch..."
 git merge main --no-edit
 
-# 删除 canvas-image-viewer/src 目录（不提交到 GitHub）
+# Remove canvas-image-viewer/src directory
 $srcPath = "canvas-image-viewer/src"
 if (Test-Path $srcPath) {
-    Write-Host "删除 $srcPath..."
+    Write-Host "Removing $srcPath..."
     Remove-Item -Path $srcPath -Recurse -Force
     git rm -rf $srcPath
 }
 
-# 提交到 GitHub
-Write-Host "提交到 GitHub..."
+Write-Host "Pushing to GitHub..."
 git add .
 git commit -m "chore: release build (without src)"
 git push github release
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "推送 GitHub 失败！" -ForegroundColor Red
+    Write-Host "Failed to push to GitHub!" -ForegroundColor Red
     exit 1
 }
 
-# 4. 切回主分支
-Write-Host "`n4. 切回主分支..." -ForegroundColor Yellow
+# 4. Switch back to main branch
+Write-Host "`n4. Switching back to main branch..." -ForegroundColor Yellow
 git checkout main
 
-Write-Host "`n=== 发布完成 ===" -ForegroundColor Green
-Write-Host "Gitee (main): 完整源码已推送" -ForegroundColor Green
-Write-Host "GitHub (release): 排除 src 的产物已推送" -ForegroundColor Green
+Write-Host "`n=== Deployment completed ===" -ForegroundColor Green
+Write-Host "Gitee (main): Full source code pushed" -ForegroundColor Green
+Write-Host "GitHub (release): Build artifacts pushed (src excluded)" -ForegroundColor Green

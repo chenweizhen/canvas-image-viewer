@@ -13,6 +13,6 @@
     "build:vue": "pnpm --filter canvas-image-viewer-vue3 build",
     "build:react": "pnpm --filter canvas-image-viewer-react build",
     "build:all": "pnpm run build:lib && pnpm run build:vue && pnpm run build:react",
-    "deploy": "powershell -ExecutionPolicy Bypass -File deploy.ps1"
+    "release": "powershell -ExecutionPolicy Bypass -File deploy.ps1"
   }
 }
