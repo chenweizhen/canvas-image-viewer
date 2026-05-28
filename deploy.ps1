@@ -18,8 +18,17 @@ if ($LASTEXITCODE -ne 0) {
 # 2. Push all to Gitee (main branch)
 Write-Host "`n2. Pushing source code to Gitee..." -ForegroundColor Yellow
 git checkout main
-git add .
-git commit -m "chore: update source code"
+
+# Check if there are changes to commit
+$hasChanges = git status --porcelain
+if ($hasChanges) {
+    Write-Host "Committing changes..."
+    git add .
+    git commit -m "chore: update source code"
+} else {
+    Write-Host "No changes to commit"
+}
+
 git push gitee main
 
 if ($LASTEXITCODE -ne 0) {
@@ -50,9 +59,17 @@ if (Test-Path $srcPath) {
     git rm -rf $srcPath
 }
 
+# Check if there are changes to commit
+$hasChanges = git status --porcelain
+if ($hasChanges) {
+    Write-Host "Committing changes..."
+    git add .
+    git commit -m "chore: release build (without src)"
+} else {
+    Write-Host "No changes to commit"
+}
+
 Write-Host "Pushing to GitHub..."
-git add .
-git commit -m "chore: release build (without src)"
 git push github release
 
 if ($LASTEXITCODE -ne 0) {
