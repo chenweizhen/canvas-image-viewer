@@ -6,6 +6,20 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "=== Starting deployment process ===" -ForegroundColor Cyan
 
+# 0. Restore src directory if it was removed in previous failed run
+Write-Host "`n0. Checking and restoring src directory..." -ForegroundColor Yellow
+$srcPath = "canvas-image-viewer/src"
+if (-not (Test-Path $srcPath)) {
+    Write-Host "src directory not found, restoring from git..."
+    git checkout main -- $srcPath
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Failed to restore src directory!" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "src directory exists, skipping restore"
+}
+
 # 1. Build all projects
 Write-Host "`n1. Building all projects..." -ForegroundColor Yellow
 pnpm run build:all
