@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { ImageViewer } from 'canvas-image-viewer'
+import { ImageViewer } from '@mk/canvas-image-viewer'
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null)

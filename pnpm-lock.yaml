@@ -25,7 +25,7 @@ importers:
 
   canvas-image-viewer-react:
     dependencies:
-      canvas-image-viewer:
+      '@mk/canvas-image-viewer':
         specifier: workspace:*
         version: link:../canvas-image-viewer
       react:
@@ -53,7 +53,7 @@ importers:
 
   canvas-image-viewer-vue3:
     dependencies:
-      canvas-image-viewer:
+      '@mk/canvas-image-viewer':
         specifier: workspace:*
         version: link:../canvas-image-viewer
       vue:
