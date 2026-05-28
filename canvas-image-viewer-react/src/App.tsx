@@ -8,16 +8,21 @@ function App() {
   const [imageCount, setImageCount] = useState(0)
 
   const imageList = [
-    'https://picsum.photos/id/1018/800/600',
-    'https://picsum.photos/id/1015/200/400',
-    'https://picsum.photos/id/1019/400/400',
-    'https://picsum.photos/id/1016/200/700',
-    'https://picsum.photos/id/1021/200/500',
+    'https://picsum.photos/id/1011/800/600',
+    'https://picsum.photos/id/1025/200/400',
+    'https://picsum.photos/id/1039/400/400',
+    'https://picsum.photos/id/1056/200/700',
+    'https://picsum.photos/id/1061/200/500',
     'https://picsum.photos/id/1018/2800/2600',
     'https://picsum.photos/id/1015/200/400',
     'https://picsum.photos/id/1019/400/400',
     'https://picsum.photos/id/1016/200/700',
-    'https://picsum.photos/id/1021/200/500'
+    'https://picsum.photos/id/1021/200/500',
+    'https://picsum.photos/id/1019/2800/2600',
+    'https://picsum.photos/id/1014/200/400',
+    'https://picsum.photos/id/1018/400/400',
+    'https://picsum.photos/id/1012/200/700',
+    'https://picsum.photos/id/1022/200/500'
   ]
 
   const handlePrev = () => {

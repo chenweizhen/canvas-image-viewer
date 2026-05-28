@@ -7,6 +7,24 @@ export interface ImageViewerOptions {
   toolbarHeight?: number;
   roundRadius?: number;
   onDelete?: (index: number) => void;
+  
+  colors?: ViewerColors;
+}
+
+export interface ViewerColors {
+  containerBg?: string;
+  toolbarBg?: string;
+  toolbarIcon?: string;
+  thumbnailBg?: string;
+  thumbnailActive?: string;
+  thumbnailBorder?: string;
+  overviewBg?: string;
+  overviewBorder?: string;
+  overviewMask?: string;
+  overviewMaskBorder?: string;
+  textColor?: string;
+  scaleInputBg?: string;
+  scaleInputText?: string;
 }
 
 export interface ImageState {

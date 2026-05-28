@@ -21,6 +21,14 @@ export declare class ImageViewer {
     private isFitMode;
     private isFullscreen;
     private isDraggingOverview;
+    private isDraggingOverviewWindow;
+    private overviewDragStartX;
+    private overviewDragStartY;
+    private overviewStartLeft;
+    private overviewStartTop;
+    private loadingImages;
+    private isFirstImageLoaded;
+    private loadingAnimationId;
     private currentIndex;
     private imageList;
     private imageState;
@@ -30,10 +38,12 @@ export declare class ImageViewer {
     private readonly TW;
     private readonly TH;
     private readonly OVERVIEW_SIZE;
+    private readonly SCROLLBAR_HEIGHT;
     constructor(options: ImageViewerOptions);
     private initCanvas;
     private createToolbarButton;
     private loadImages;
+    private renderLoading;
     private renderAll;
     private renderMainImage;
     private renderThumbnails;

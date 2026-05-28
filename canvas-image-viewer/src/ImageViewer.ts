@@ -1,1052 +1,1386 @@
-import type { ImageViewerOptions, ImageState } from './types'
-import { Icons } from './icon'
+import type { ImageViewerOptions, ImageState } from "./types";
+import { Icons } from "./icon";
 
 export class ImageViewer {
-  private options: Required<ImageViewerOptions>
-  private container: HTMLElement
-  private mainCanvas!: HTMLCanvasElement
-  private thumbCanvas!: HTMLCanvasElement
-  private overviewCanvas!: HTMLCanvasElement
-  private overviewCtx!: CanvasRenderingContext2D
-  private overviewContainer!: HTMLElement
-  private mainCtx!: CanvasRenderingContext2D
-  private thumbCtx!: CanvasRenderingContext2D
-  private toolbarContainer!: HTMLElement
-  private thumbScrollContainer!: HTMLElement
-  private scaleDisplay!: HTMLElement
-  private infoDisplay!: HTMLElement
-  private fitBtn!: HTMLButtonElement
-  private fullscreenBtn!: HTMLButtonElement
-  private overviewBtn!: HTMLButtonElement
-  private showThumbnails = true
-  private showOverview = true
-  private isFitMode = true
-  private isFullscreen = false
-  private isDraggingOverview = false
+  private options: Required<ImageViewerOptions>;
+  private container: HTMLElement;
+  private mainCanvas!: HTMLCanvasElement;
+  private thumbCanvas!: HTMLCanvasElement;
+  private overviewCanvas!: HTMLCanvasElement;
+  private overviewCtx!: CanvasRenderingContext2D;
+  private overviewContainer!: HTMLElement;
+  private mainCtx!: CanvasRenderingContext2D;
+  private thumbCtx!: CanvasRenderingContext2D;
+  private toolbarContainer!: HTMLElement;
+  private thumbScrollContainer!: HTMLElement;
+  private scaleDisplay!: HTMLElement;
+  private infoDisplay!: HTMLElement;
+  private fitBtn!: HTMLButtonElement;
+  private fullscreenBtn!: HTMLButtonElement;
+  private overviewBtn!: HTMLButtonElement;
+  private showThumbnails = true;
+  private showOverview = true;
+  private isFitMode = true;
+  private isFullscreen = false;
+  private isDraggingOverview = false;
+  private isDraggingOverviewWindow = false;
+  private overviewDragStartX = 0;
+  private overviewDragStartY = 0;
+  private overviewStartLeft = 0;
+  private overviewStartTop = 0;
+  private loadingImages = new Set<number>();
+  private isFirstImageLoaded = false;
+  private loadingAnimationId: number | null = null;
 
-  private currentIndex = 0
-  private imageList: HTMLImageElement[] = []
-  private imageState: ImageState = { scale: 1, x: 0, y: 0, rotation: 0, flipH: false, flipV: false }
+  private currentIndex = 0;
+  private imageList: HTMLImageElement[] = [];
+  private imageState: ImageState = {
+    scale: 1,
+    x: 0,
+    y: 0,
+    rotation: 0,
+    flipH: false,
+    flipV: false,
+  };
 
-  private isDragging = false
-  private lastX = 0
-  private lastY = 0
+  private isDragging = false;
+  private lastX = 0;
+  private lastY = 0;
 
-  private readonly TW = 80
-  private readonly TH = 45
-  private readonly OVERVIEW_SIZE = 150
+  private readonly TW = 80;
+  private readonly TH = 45;
+  private readonly OVERVIEW_SIZE = 150;
+  private readonly SCROLLBAR_HEIGHT = 8;
 
   constructor(options: ImageViewerOptions) {
-    this.options = Object.assign({
-      width: 1000,
-      height: 650,
-      thumbnailHeight: 70,
-      toolbarHeight: 40,
-      roundRadius: 4,
-      onDelete: () => {}
-    }, options)
+    this.options = Object.assign(
+      {
+        width: 1000,
+        height: 650,
+        thumbnailHeight: 80,
+        toolbarHeight: 40,
+        roundRadius: 4,
+        onDelete: () => {},
+        colors: {},
+      },
+      options,
+    );
 
-    this.container = options.container
-    this.initCanvas()
-    this.loadImages()
-    this.bindEvents()
+    this.options.colors = Object.assign(
+      {
+        containerBg: "#1a1a1a",
+        toolbarBg: "#2a2a2a",
+        toolbarIcon: "#cccccc",
+        thumbnailBg: "#2a2a2a",
+        thumbnailActive: "#0099ff",
+        thumbnailBorder: "#3a3a3a",
+        overviewBg: "#2a2a2a",
+        overviewBorder: "#3a3a3a",
+        overviewMask: "rgba(0, 153, 255, 0.3)",
+        overviewMaskBorder: "#0099ff",
+        textColor: "#888888",
+        scaleInputBg: "#3a3a3a",
+        scaleInputText: "#ffffff",
+      },
+      this.options.colors,
+    );
+
+    this.container = options.container;
+    this.initCanvas();
+    this.loadImages();
+    this.bindEvents();
   }
 
   private initCanvas() {
-    this.container.style.position = 'relative'
-    this.container.style.background = '#1e1e1e'
-    this.container.style.userSelect = 'none'
-    this.container.style.overflow = 'hidden'
+    const colors = this.options.colors;
 
-    this.mainCanvas = document.createElement('canvas')
-    this.mainCanvas.width = this.options.width
-    this.mainCanvas.height = this.options.height - this.options.thumbnailHeight - this.options.toolbarHeight
-    this.mainCanvas.style.cursor = 'grab'
-    this.mainCanvas.style.display = 'block'
-    this.mainCtx = this.mainCanvas.getContext('2d')!
+    this.container.style.position = "relative";
+    this.container.style.background = colors.containerBg || "#1a1a1a";
+    this.container.style.userSelect = "none";
+    this.container.style.overflow = "hidden";
 
-    this.thumbScrollContainer = document.createElement('div')
-    this.thumbScrollContainer.style.position = 'relative'
-    this.thumbScrollContainer.style.width = '100%'
-    this.thumbScrollContainer.style.height = this.options.thumbnailHeight + 'px'
-    this.thumbScrollContainer.style.overflowX = 'auto'
-    this.thumbScrollContainer.style.overflowY = 'hidden'
-    this.thumbScrollContainer.style.background = '#2a2a2a'
+    this.mainCanvas = document.createElement("canvas");
+    this.mainCanvas.width = this.options.width;
+    this.mainCanvas.height =
+      this.options.height -
+      this.options.thumbnailHeight -
+      this.options.toolbarHeight;
+    this.mainCanvas.style.cursor = "grab";
+    this.mainCanvas.style.display = "block";
+    this.mainCtx = this.mainCanvas.getContext("2d")!;
 
-    this.thumbCanvas = document.createElement('canvas')
-    this.thumbCanvas.height = this.options.thumbnailHeight
-    this.thumbCanvas.style.cursor = 'pointer'
-    this.thumbCanvas.style.display = 'block'
-    this.thumbCtx = this.thumbCanvas.getContext('2d')!
+    this.thumbScrollContainer = document.createElement("div");
+    this.thumbScrollContainer.classList.add("thumb-scroll-container");
+    this.thumbScrollContainer.style.position = "relative";
+    this.thumbScrollContainer.style.width = "100%";
+    this.thumbScrollContainer.style.height =
+      this.options.thumbnailHeight + "px";
+    this.thumbScrollContainer.style.overflowX = "hidden";
+    this.thumbScrollContainer.style.overflowY = "hidden";
+    this.thumbScrollContainer.style.background =
+      colors.thumbnailBg || "#3a3a3a";
 
-    this.thumbScrollContainer.appendChild(this.thumbCanvas)
+    this.thumbScrollContainer.addEventListener("mouseenter", () => {
+      this.thumbScrollContainer.style.overflowX = "auto";
+    });
 
-    this.toolbarContainer = document.createElement('div')
-    this.toolbarContainer.style.height = this.options.toolbarHeight + 'px'
-    this.toolbarContainer.style.background = '#252525'
-    this.toolbarContainer.style.display = 'flex'
-    this.toolbarContainer.style.alignItems = 'center'
-    this.toolbarContainer.style.justifyContent = 'space-between'
-    this.toolbarContainer.style.padding = '0 16px'
-    this.toolbarContainer.style.borderTop = '1px solid #3a3a3a'
+    this.thumbScrollContainer.addEventListener("mouseleave", () => {
+      this.thumbScrollContainer.style.overflowX = "hidden";
+    });
 
-    this.infoDisplay = document.createElement('div')
-    this.infoDisplay.style.color = '#888888'
-    this.infoDisplay.style.fontSize = '12px'
-    this.infoDisplay.style.flex = '1'
+    const scrollbarStyle = document.createElement("style");
+    scrollbarStyle.textContent = `
+      .thumb-scroll-container::-webkit-scrollbar {
+        height: ${this.SCROLLBAR_HEIGHT}px;
+        width: ${this.SCROLLBAR_HEIGHT}px;
+      }
+      .thumb-scroll-container::-webkit-scrollbar-track {
+        background: ${colors.thumbnailBg || "#3a3a3a"};
+        border-radius: ${this.options.roundRadius}px;
+      }
+      .thumb-scroll-container::-webkit-scrollbar-thumb {
+        background: ${colors.thumbnailBorder || "#4a4a4a"};
+        border-radius: ${this.options.roundRadius}px;
+      }
+      .thumb-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: ${colors.toolbarIcon || "#6a6a6a"};
+      }
+    `;
+    document.head.appendChild(scrollbarStyle);
 
-    const leftSection = document.createElement('div')
-    leftSection.style.display = 'flex'
-    leftSection.style.alignItems = 'center'
-    leftSection.style.gap = '8px'
-    leftSection.appendChild(this.infoDisplay)
+    this.thumbCanvas = document.createElement("canvas");
+    this.thumbCanvas.height = this.options.thumbnailHeight;
+    this.thumbCanvas.style.cursor = "pointer";
+    this.thumbCanvas.style.display = "block";
+    this.thumbCanvas.style.paddingBottom = this.SCROLLBAR_HEIGHT + "px";
+    this.thumbCtx = this.thumbCanvas.getContext("2d")!;
 
-    const centerSection = document.createElement('div')
-    centerSection.style.display = 'flex'
-    centerSection.style.alignItems = 'center'
-    centerSection.style.gap = '8px'
+    this.thumbScrollContainer.appendChild(this.thumbCanvas);
 
-    const prevBtn = this.createToolbarButton('ArrowLeft', () => this.prev())
-    centerSection.appendChild(prevBtn)
+    this.toolbarContainer = document.createElement("div");
+    this.toolbarContainer.style.height = this.options.toolbarHeight + "px";
+    this.toolbarContainer.style.background = colors.toolbarBg || "#2a2a2a";
+    this.toolbarContainer.style.display = "flex";
+    this.toolbarContainer.style.alignItems = "center";
+    this.toolbarContainer.style.justifyContent = "space-between";
+    this.toolbarContainer.style.padding = "0 16px";
+    this.toolbarContainer.style.borderTop =
+      "1px solid " + colors.thumbnailBorder;
 
-    const pageInfo = document.createElement('span')
-    pageInfo.style.color = '#cccccc'
-    pageInfo.style.fontSize = '12px'
-    pageInfo.style.minWidth = '60px'
-    pageInfo.style.textAlign = 'center'
-    pageInfo.id = 'page-info'
-    pageInfo.textContent = '1/0'
-    centerSection.appendChild(pageInfo)
+    this.infoDisplay = document.createElement("div");
+    this.infoDisplay.style.color = colors.textColor || "#ffffff";
+    this.infoDisplay.style.fontSize = "12px";
+    this.infoDisplay.style.flex = "1";
 
-    const nextBtn = this.createToolbarButton('ArrowRight', () => this.next())
-    centerSection.appendChild(nextBtn)
+    const leftSection = document.createElement("div");
+    leftSection.style.display = "flex";
+    leftSection.style.alignItems = "center";
+    leftSection.style.gap = "8px";
+    leftSection.appendChild(this.infoDisplay);
 
-    this.fitBtn = this.createToolbarButton('FitToScreen', () => this.toggleFitMode())
-    this.fitBtn.title = '适应屏幕'
-    centerSection.appendChild(this.fitBtn)
+    const centerSection = document.createElement("div");
+    centerSection.style.display = "flex";
+    centerSection.style.alignItems = "center";
+    centerSection.style.gap = "8px";
 
-    const scaleContainer = document.createElement('div')
-    scaleContainer.style.position = 'relative'
-    scaleContainer.style.background = '#3a3a3a'
-    scaleContainer.style.border = 'none'
-    scaleContainer.style.padding = '0'
-    scaleContainer.style.fontSize = '12px'
-    scaleContainer.style.borderRadius = '4px'
-    scaleContainer.style.width = '64px'
+    const prevBtn = this.createToolbarButton("ArrowLeft", () => this.prev());
+    centerSection.appendChild(prevBtn);
 
-    const scaleInput = document.createElement('input')
-    scaleInput.type = 'text'
-    scaleInput.style.background = 'transparent'
-    scaleInput.style.color = '#ffffff'
-    scaleInput.style.border = 'none'
-    scaleInput.style.padding = '4px 22px 4px 4px'
-    scaleInput.style.fontSize = '12px'
-    scaleInput.style.width = '72px'
-    scaleInput.style.textAlign = 'center'
-    scaleInput.style.cursor = 'text'
-    scaleInput.style.outline = 'none'
-    scaleInput.value = '100%'
+    const pageInfo = document.createElement("span");
+    pageInfo.style.color = colors.toolbarIcon || "#cccccc";
+    pageInfo.style.fontSize = "12px";
+    pageInfo.style.minWidth = "60px";
+    pageInfo.style.textAlign = "center";
+    pageInfo.id = "page-info";
+    pageInfo.textContent = "1/0";
+    centerSection.appendChild(pageInfo);
 
-    const scaleArrow = document.createElement('button')
-    scaleArrow.innerHTML = Icons.ArrowDropDown
-    scaleArrow.style.position = 'absolute'
-    scaleArrow.style.right = '2px'
-    scaleArrow.style.top = '50%'
-    scaleArrow.style.transform = 'translateY(-50%)'
-    scaleArrow.style.background = 'transparent'
-    scaleArrow.style.border = 'none'
-    scaleArrow.style.color = '#cccccc'
-    scaleArrow.style.fontSize = '10px'
-    scaleArrow.style.width = '18px'
-    scaleArrow.style.height = '18px'
-    scaleArrow.style.cursor = 'pointer'
-    scaleArrow.style.display = 'flex'
-    scaleArrow.style.alignItems = 'center'
-    scaleArrow.style.justifyContent = 'center'
-    scaleArrow.title = '缩放选项'
+    const nextBtn = this.createToolbarButton("ArrowRight", () => this.next());
+    centerSection.appendChild(nextBtn);
 
-    scaleArrow.addEventListener('mouseenter', () => { scaleArrow.style.color = '#ffffff' })
-    scaleArrow.addEventListener('mouseleave', () => { scaleArrow.style.color = '#cccccc' })
+    this.fitBtn = this.createToolbarButton("FitToScreen", () =>
+      this.toggleFitMode(),
+    );
+    this.fitBtn.title = "适应屏幕";
+    centerSection.appendChild(this.fitBtn);
 
-    scaleContainer.appendChild(scaleInput)
-    scaleContainer.appendChild(scaleArrow)
+    const scaleContainer = document.createElement("div");
+    scaleContainer.style.position = "relative";
+    scaleContainer.style.background = colors.scaleInputBg || "#3a3a3a";
+    scaleContainer.style.border = "none";
+    scaleContainer.style.padding = "0";
+    scaleContainer.style.fontSize = "12px";
+    scaleContainer.style.borderRadius = this.options.roundRadius + "px";
+    scaleContainer.style.width = "64px";
 
-    const scaleDropdown = document.createElement('div')
-    scaleDropdown.style.position = 'absolute'
-    scaleDropdown.style.bottom = '100%'
-    scaleDropdown.style.left = '-8px'
-    scaleDropdown.style.background = '#2a2a2a'
-    scaleDropdown.style.border = '1px solid #3a3a3a'
-    scaleDropdown.style.width = '80px'
-    scaleDropdown.style.display = 'none'
-    scaleDropdown.style.zIndex = '100'
-    scaleDropdown.style.borderRadius = '4px'
-    scaleDropdown.style.marginBottom = '4px'
-    scaleDropdown.style.textAlign = 'center'
+    const scaleInput = document.createElement("input");
+    scaleInput.type = "text";
+    scaleInput.style.background = "transparent";
+    scaleInput.style.color = colors.scaleInputText || "#ffffff";
+    scaleInput.style.border = "none";
+    scaleInput.style.padding = "4px 22px 4px 4px";
+    scaleInput.style.fontSize = "12px";
+    scaleInput.style.width = "72px";
+    scaleInput.style.textAlign = "center";
+    scaleInput.style.cursor = "text";
+    scaleInput.style.outline = "none";
+    scaleInput.value = "100%";
 
-    const presetScales = ['25', '50', '75', '100', '150', '200', '300', '400']
-    presetScales.forEach(scale => {
-      const item = document.createElement('div')
-      item.textContent = scale + '%'
-      item.style.padding = '4px 12px'
-      item.style.color = '#cccccc'
-      item.style.cursor = 'pointer'
-      item.style.fontSize = '12px'
-      item.style.textAlign = 'center'
-      item.addEventListener('mouseenter', () => { item.style.background = '#3a3a3a'; item.style.color = '#ffffff' })
-      item.addEventListener('mouseleave', () => { item.style.background = 'transparent'; item.style.color = '#cccccc' })
-      item.addEventListener('click', () => {
-        const scaleValue = parseFloat(scale) / 100
-        this.imageState.scale = Math.max(0.1, Math.min(10, scaleValue))
-        scaleInput.value = `${Math.round(this.imageState.scale * 100)}%`
-        this.isFitMode = false
-        this.updateFitButton()
-        this.renderMainImage()
-        scaleDropdown.style.display = 'none'
-      })
-      scaleDropdown.appendChild(item)
-    })
+    const scaleArrow = document.createElement("button");
+    scaleArrow.innerHTML = Icons.ArrowDropDown;
+    scaleArrow.style.position = "absolute";
+    scaleArrow.style.right = "2px";
+    scaleArrow.style.top = "50%";
+    scaleArrow.style.transform = "translateY(-50%)";
+    scaleArrow.style.background = "transparent";
+    scaleArrow.style.border = "none";
+    scaleArrow.style.color = colors.toolbarIcon || "#cccccc";
+    scaleArrow.style.fontSize = "10px";
+    scaleArrow.style.width = "18px";
+    scaleArrow.style.height = "18px";
+    scaleArrow.style.cursor = "pointer";
+    scaleArrow.style.display = "flex";
+    scaleArrow.style.alignItems = "center";
+    scaleArrow.style.justifyContent = "center";
+    scaleArrow.title = "缩放选项";
 
-    scaleContainer.appendChild(scaleDropdown)
+    scaleArrow.addEventListener("mouseenter", () => {
+      scaleArrow.style.color = colors.scaleInputText || "#ffffff";
+    });
+    scaleArrow.addEventListener("mouseleave", () => {
+      scaleArrow.style.color = colors.toolbarIcon || "#cccccc";
+    });
 
-    scaleArrow.addEventListener('click', (e) => {
-      e.stopPropagation()
-      scaleDropdown.style.display = scaleDropdown.style.display === 'none' ? 'block' : 'none'
-    })
+    scaleContainer.appendChild(scaleInput);
+    scaleContainer.appendChild(scaleArrow);
 
-    document.addEventListener('click', () => {
-      scaleDropdown.style.display = 'none'
-    })
+    const scaleDropdown = document.createElement("div");
+    scaleDropdown.style.position = "absolute";
+    scaleDropdown.style.bottom = "100%";
+    scaleDropdown.style.left = "-8px";
+    scaleDropdown.style.background = colors.thumbnailBg || "#3a3a3a";
+    scaleDropdown.style.border = "1px solid " + colors.thumbnailBorder;
+    scaleDropdown.style.width = "80px";
+    scaleDropdown.style.display = "none";
+    scaleDropdown.style.zIndex = "100";
+    scaleDropdown.style.borderRadius = this.options.roundRadius + "px";
+    scaleDropdown.style.marginBottom = "4px";
+    scaleDropdown.style.textAlign = "center";
 
-    scaleInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const value = scaleInput.value.replace('%', '').trim()
-        const scaleValue = parseFloat(value)
+    const presetScales = ["25", "50", "75", "100", "150", "200", "300", "400"];
+    presetScales.forEach((scale) => {
+      const item = document.createElement("div");
+      item.textContent = scale + "%";
+      item.style.padding = "4px 12px";
+      item.style.color = colors.toolbarIcon || "#cccccc";
+      item.style.cursor = "pointer";
+      item.style.fontSize = "12px";
+      item.style.textAlign = "center";
+      item.addEventListener("mouseenter", () => {
+        item.style.background = colors.scaleInputBg || "#3a3a3a";
+        item.style.color = colors.scaleInputText || "#ffffff";
+      });
+      item.addEventListener("mouseleave", () => {
+        item.style.background = "transparent";
+        item.style.color = colors.toolbarIcon || "#cccccc";
+      });
+      item.addEventListener("click", () => {
+        const scaleValue = parseFloat(scale) / 100;
+        this.imageState.scale = Math.max(0.1, Math.min(10, scaleValue));
+        scaleInput.value = `${Math.round(this.imageState.scale * 100)}%`;
+        this.isFitMode = false;
+        this.updateFitButton();
+        this.renderMainImage();
+        scaleDropdown.style.display = "none";
+      });
+      scaleDropdown.appendChild(item);
+    });
+
+    scaleContainer.appendChild(scaleDropdown);
+
+    scaleArrow.addEventListener("click", (e) => {
+      e.stopPropagation();
+      scaleDropdown.style.display =
+        scaleDropdown.style.display === "none" ? "block" : "none";
+    });
+
+    document.addEventListener("click", () => {
+      scaleDropdown.style.display = "none";
+    });
+
+    scaleInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const value = scaleInput.value.replace("%", "").trim();
+        const scaleValue = parseFloat(value);
         if (!isNaN(scaleValue)) {
-          const clampedScale = Math.max(10, Math.min(1000, scaleValue))
-          const intScale = Math.round(clampedScale)
-          this.imageState.scale = intScale / 100
-          scaleInput.value = `${intScale}%`
-          this.isFitMode = false
-          this.updateFitButton()
-          this.renderMainImage()
+          const clampedScale = Math.max(10, Math.min(1000, scaleValue));
+          const intScale = Math.round(clampedScale);
+          this.imageState.scale = intScale / 100;
+          scaleInput.value = `${intScale}%`;
+          this.isFitMode = false;
+          this.updateFitButton();
+          this.renderMainImage();
         } else {
-          scaleInput.value = `${Math.round(this.imageState.scale * 100)}%`
+          scaleInput.value = `${Math.round(this.imageState.scale * 100)}%`;
         }
       }
-    })
+    });
 
-    scaleInput.addEventListener('blur', () => {
-      const value = scaleInput.value.replace('%', '').trim()
-      const scaleValue = parseFloat(value)
+    scaleInput.addEventListener("blur", () => {
+      const value = scaleInput.value.replace("%", "").trim();
+      const scaleValue = parseFloat(value);
       if (!isNaN(scaleValue)) {
-        const clampedScale = Math.max(10, Math.min(1000, scaleValue))
-        const intScale = Math.round(clampedScale)
-        this.imageState.scale = intScale / 100
-        scaleInput.value = `${intScale}%`
-        this.isFitMode = false
-        this.updateFitButton()
-        this.renderMainImage()
+        const clampedScale = Math.max(10, Math.min(1000, scaleValue));
+        const intScale = Math.round(clampedScale);
+        this.imageState.scale = intScale / 100;
+        scaleInput.value = `${intScale}%`;
+        this.isFitMode = false;
+        this.updateFitButton();
+        this.renderMainImage();
       } else {
-        scaleInput.value = `${Math.round(this.imageState.scale * 100)}%`
+        scaleInput.value = `${Math.round(this.imageState.scale * 100)}%`;
       }
-    })
+    });
 
-    this.scaleDisplay = scaleInput
+    this.scaleDisplay = scaleInput;
 
-    centerSection.appendChild(scaleContainer)
+    centerSection.appendChild(scaleContainer);
 
-    const zoomInBtn = this.createToolbarButton('ZoomIn', () => this.zoom(1.1))
-    zoomInBtn.title = '放大'
-    centerSection.appendChild(zoomInBtn)
+    const zoomInBtn = this.createToolbarButton("ZoomIn", () => this.zoom(1.1));
+    zoomInBtn.title = "放大";
+    centerSection.appendChild(zoomInBtn);
 
-    const zoomOutBtn = this.createToolbarButton('ZoomOut', () => this.zoom(0.9))
-    zoomOutBtn.title = '缩小'
-    centerSection.appendChild(zoomOutBtn)
+    const zoomOutBtn = this.createToolbarButton("ZoomOut", () =>
+      this.zoom(0.9),
+    );
+    zoomOutBtn.title = "缩小";
+    centerSection.appendChild(zoomOutBtn);
 
-    const rotateLeftBtn = this.createToolbarButton('RotateLeft', () => this.rotate(-90))
-    rotateLeftBtn.title = '向左旋转'
-    centerSection.appendChild(rotateLeftBtn)
+    const rotateLeftBtn = this.createToolbarButton("RotateLeft", () =>
+      this.rotate(-90),
+    );
+    rotateLeftBtn.title = "向左旋转";
+    centerSection.appendChild(rotateLeftBtn);
 
-    const rotateRightBtn = this.createToolbarButton('RotateRight', () => this.rotate(90))
-    rotateRightBtn.title = '向右旋转'
-    centerSection.appendChild(rotateRightBtn)
+    const rotateRightBtn = this.createToolbarButton("RotateRight", () =>
+      this.rotate(90),
+    );
+    rotateRightBtn.title = "向右旋转";
+    centerSection.appendChild(rotateRightBtn);
 
-    const flipHBtn = this.createToolbarButton('FlipHorizontal', () => this.flipHorizontal())
-    flipHBtn.title = '水平翻转'
-    centerSection.appendChild(flipHBtn)
+    const flipHBtn = this.createToolbarButton("FlipHorizontal", () =>
+      this.flipHorizontal(),
+    );
+    flipHBtn.title = "水平翻转";
+    centerSection.appendChild(flipHBtn);
 
-    const flipVBtn = this.createToolbarButton('FlipVertical', () => this.flipVertical())
-    flipVBtn.title = '垂直翻转'
-    centerSection.appendChild(flipVBtn)
+    const flipVBtn = this.createToolbarButton("FlipVertical", () =>
+      this.flipVertical(),
+    );
+    flipVBtn.title = "垂直翻转";
+    centerSection.appendChild(flipVBtn);
 
-    const deleteBtn = this.createToolbarButton('Delete', () => this.handleDelete())
-    deleteBtn.title = '删除'
-    centerSection.appendChild(deleteBtn)
+    const deleteBtn = this.createToolbarButton("Delete", () =>
+      this.handleDelete(),
+    );
+    deleteBtn.title = "删除";
+    centerSection.appendChild(deleteBtn);
 
-    const rightSection = document.createElement('div')
-    rightSection.style.display = 'flex'
-    rightSection.style.alignItems = 'center'
-    rightSection.style.gap = '8px'
+    const rightSection = document.createElement("div");
+    rightSection.style.display = "flex";
+    rightSection.style.alignItems = "center";
+    rightSection.style.gap = "8px";
 
-    const thumbToggleBtn = this.createToolbarButton('Slideshow', () => this.toggleThumbnails())
-    thumbToggleBtn.title = '切换缩略图显示'
-    rightSection.appendChild(thumbToggleBtn)
+    const thumbToggleBtn = this.createToolbarButton("Slideshow", () =>
+      this.toggleThumbnails(),
+    );
+    thumbToggleBtn.title = "切换缩略图显示";
+    rightSection.appendChild(thumbToggleBtn);
 
-    this.overviewBtn = this.createToolbarButton('OverviewOff', () => this.toggleOverview())
-    this.overviewBtn.title = '切换鸟瞰图显示'
-    rightSection.appendChild(this.overviewBtn)
+    this.overviewBtn = this.createToolbarButton("OverviewOff", () =>
+      this.toggleOverview(),
+    );
+    this.overviewBtn.title = "切换鸟瞰图显示";
+    rightSection.appendChild(this.overviewBtn);
 
-    this.fullscreenBtn = this.createToolbarButton('Fullscreen', () => this.toggleFullscreen())
-    this.fullscreenBtn.title = '切换全屏'
-    rightSection.appendChild(this.fullscreenBtn)
+    this.fullscreenBtn = this.createToolbarButton("Fullscreen", () =>
+      this.toggleFullscreen(),
+    );
+    this.fullscreenBtn.title = "切换全屏";
+    rightSection.appendChild(this.fullscreenBtn);
 
-    this.toolbarContainer.appendChild(leftSection)
-    this.toolbarContainer.appendChild(centerSection)
-    this.toolbarContainer.appendChild(rightSection)
+    this.toolbarContainer.appendChild(leftSection);
+    this.toolbarContainer.appendChild(centerSection);
+    this.toolbarContainer.appendChild(rightSection);
 
-    this.overviewContainer = document.createElement('div')
-    this.overviewContainer.style.position = 'absolute'
-    this.overviewContainer.style.bottom = (this.options.toolbarHeight + this.options.thumbnailHeight + 10) + 'px'
-    this.overviewContainer.style.right = '10px'
-    //this.overviewContainer.style.width = (this.OVERVIEW_SIZE + 12) + 'px'
-    this.overviewContainer.style.background = '#2a2a2a'
-    this.overviewContainer.style.border = '1px solid #3a3a3a'
-    this.overviewContainer.style.borderRadius = '4px'
-    this.overviewContainer.style.padding = '4px 8px'
+    this.overviewContainer = document.createElement("div");
+    this.overviewContainer.style.position = "absolute";
+    this.overviewContainer.style.bottom =
+      this.options.toolbarHeight + this.options.thumbnailHeight + 10 + "px";
+    this.overviewContainer.style.right = "10px";
+    this.overviewContainer.style.background = colors.overviewBg || "#2a2a2a";
+    this.overviewContainer.style.border = "1px solid " + colors.overviewBorder;
+    this.overviewContainer.style.borderRadius = this.options.roundRadius + "px";
+    this.overviewContainer.style.padding = "4px 8px";
+    this.overviewContainer.style.cursor = "move";
+    this.overviewContainer.style.userSelect = "none";
 
-    const overviewHeader = document.createElement('div')
-    overviewHeader.style.display = 'flex'
-    overviewHeader.style.justifyContent = 'space-between'
-    overviewHeader.style.alignItems = 'center'
-    overviewHeader.style.padding = '2px 0px'
-    overviewHeader.style.marginBottom = '4px'
+    this.overviewContainer.addEventListener("mousedown", (e) => {
+      if (e.target === overviewCloseBtn) return;
+      this.isDraggingOverviewWindow = true;
+      this.overviewDragStartX = e.clientX;
+      this.overviewDragStartY = e.clientY;
 
-    const overviewTitle = document.createElement('span')
-    overviewTitle.style.color = '#888888'
-    overviewTitle.style.fontSize = '12px'
-    overviewTitle.textContent = '鸟瞰图'
-    overviewHeader.appendChild(overviewTitle)
+      const rect = this.overviewContainer.getBoundingClientRect();
+      const containerRect = this.container.getBoundingClientRect();
+      this.overviewStartLeft = rect.left - containerRect.left;
+      this.overviewStartTop = rect.top - containerRect.top;
+    });
 
-    const overviewCloseBtn = document.createElement('button')
-    overviewCloseBtn.innerHTML = Icons.Close
-    overviewCloseBtn.style.background = 'transparent'
-    overviewCloseBtn.style.border = 'none'
-    overviewCloseBtn.style.color = '#888888'
-    overviewCloseBtn.style.fontSize = '12px'
-    overviewCloseBtn.style.width = '16px'
-    overviewCloseBtn.style.height = '16px'
-    overviewCloseBtn.style.cursor = 'pointer'
-    overviewCloseBtn.title = '关闭鸟瞰图'
-    overviewCloseBtn.addEventListener('mouseenter', () => { overviewCloseBtn.style.color = '#ffffff' })
-    overviewCloseBtn.addEventListener('mouseleave', () => { overviewCloseBtn.style.color = '#888888' })
-    overviewCloseBtn.addEventListener('click', (e) => {
-      e.stopPropagation()
-      this.toggleOverview()
-    })
-    overviewHeader.appendChild(overviewCloseBtn)
-    this.overviewContainer.appendChild(overviewHeader)
+    window.addEventListener("mousemove", (e) => {
+      if (!this.isDraggingOverviewWindow) return;
 
-    this.overviewCanvas = document.createElement('canvas')
-    this.overviewCanvas.width = this.OVERVIEW_SIZE
-    this.overviewCanvas.height = this.OVERVIEW_SIZE
-    this.overviewCanvas.style.cursor = 'move'
-    this.overviewCanvas.style.background = '#1e1e1e'
-    this.overviewCtx = this.overviewCanvas.getContext('2d')!
-    this.overviewContainer.appendChild(this.overviewCanvas)
+      const containerRect = this.container.getBoundingClientRect();
+      const overviewRect = this.overviewContainer.getBoundingClientRect();
 
-    this.container.appendChild(this.mainCanvas)
-    this.container.appendChild(this.thumbScrollContainer)
-    this.container.appendChild(this.toolbarContainer)
-    this.container.appendChild(this.overviewContainer)
+      const deltaX = e.clientX - this.overviewDragStartX;
+      const deltaY = e.clientY - this.overviewDragStartY;
+
+      let newLeft = this.overviewStartLeft + deltaX;
+      let newTop = this.overviewStartTop + deltaY;
+
+      const maxLeft = containerRect.width - overviewRect.width;
+      const maxTop =
+        containerRect.height - overviewRect.height - this.options.toolbarHeight;
+
+      newLeft = Math.max(0, Math.min(maxLeft, newLeft));
+      newTop = Math.max(0, Math.min(maxTop, newTop));
+
+      this.overviewContainer.style.left = newLeft + "px";
+      this.overviewContainer.style.top = newTop + "px";
+      this.overviewContainer.style.bottom = "auto";
+      this.overviewContainer.style.right = "auto";
+    });
+
+    window.addEventListener("mouseup", () => {
+      this.isDraggingOverviewWindow = false;
+    });
+
+    const overviewHeader = document.createElement("div");
+    overviewHeader.style.display = "flex";
+    overviewHeader.style.justifyContent = "space-between";
+    overviewHeader.style.alignItems = "center";
+    overviewHeader.style.padding = "2px 0px";
+    overviewHeader.style.marginBottom = "4px";
+
+    const overviewTitle = document.createElement("span");
+    overviewTitle.style.color = colors.textColor || "#ffffff";
+    overviewTitle.style.fontSize = "12px";
+    overviewTitle.textContent = "鸟瞰图";
+    overviewHeader.appendChild(overviewTitle);
+
+    const overviewCloseBtn = document.createElement("button");
+    overviewCloseBtn.innerHTML = Icons.Close;
+    overviewCloseBtn.style.background = "transparent";
+    overviewCloseBtn.style.border = "none";
+    overviewCloseBtn.style.color = colors.textColor || "#ffffff";
+    overviewCloseBtn.style.fontSize = "12px";
+    overviewCloseBtn.style.width = "16px";
+    overviewCloseBtn.style.height = "16px";
+    overviewCloseBtn.style.cursor = "pointer";
+    overviewCloseBtn.title = "关闭鸟瞰图";
+    overviewCloseBtn.addEventListener("mouseenter", () => {
+      overviewCloseBtn.style.color = colors.scaleInputText || "#ffffff";
+    });
+    overviewCloseBtn.addEventListener("mouseleave", () => {
+      overviewCloseBtn.style.color = colors.textColor || "#ffffff";
+    });
+    overviewCloseBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggleOverview();
+    });
+    overviewHeader.appendChild(overviewCloseBtn);
+    this.overviewContainer.appendChild(overviewHeader);
+
+    this.overviewCanvas = document.createElement("canvas");
+    this.overviewCanvas.width = this.OVERVIEW_SIZE;
+    this.overviewCanvas.height = this.OVERVIEW_SIZE;
+    this.overviewCanvas.style.cursor = "move";
+    this.overviewCanvas.style.background = colors.containerBg || "#1a1a1a";
+    this.overviewCtx = this.overviewCanvas.getContext("2d")!;
+    this.overviewContainer.appendChild(this.overviewCanvas);
+
+    this.container.appendChild(this.mainCanvas);
+    this.container.appendChild(this.thumbScrollContainer);
+    this.container.appendChild(this.toolbarContainer);
+    this.container.appendChild(this.overviewContainer);
   }
 
-  private createToolbarButton(iconName: keyof typeof Icons, onClick: () => void): HTMLButtonElement {
-    const btn = document.createElement('button')
-    btn.innerHTML = Icons[iconName]
-    btn.style.background = 'transparent'
-    btn.style.border = 'none'
-    btn.style.color = '#cccccc'
-    btn.style.fontSize = '14px'
-    btn.style.padding = '4px'
-    btn.style.width = '24px'
-    btn.style.height = '24px'
-    btn.style.borderRadius = '4px'
-    btn.style.cursor = 'pointer'
-    btn.style.display = 'flex'
-    btn.style.alignItems = 'center'
-    btn.style.justifyContent = 'center'
-    btn.addEventListener('mouseenter', () => { btn.style.background = '#3a3a3a'; btn.style.color = '#ffffff' })
-    btn.addEventListener('mouseleave', () => { btn.style.background = 'transparent'; btn.style.color = '#cccccc' })
-    btn.addEventListener('click', onClick)
-    return btn
+  private createToolbarButton(
+    iconName: keyof typeof Icons,
+    onClick: () => void,
+  ): HTMLButtonElement {
+    const colors = this.options.colors;
+    const btn = document.createElement("button");
+    btn.innerHTML = Icons[iconName];
+    btn.style.background = "transparent";
+    btn.style.border = "none";
+    btn.style.color = colors.toolbarIcon || "#cccccc";
+    btn.style.fontSize = "14px";
+    btn.style.padding = "4px";
+    btn.style.width = "24px";
+    btn.style.height = "24px";
+    btn.style.borderRadius = this.options.roundRadius + "px";
+    btn.style.cursor = "pointer";
+    btn.style.display = "flex";
+    btn.style.alignItems = "center";
+    btn.style.justifyContent = "center";
+    btn.addEventListener("mouseenter", () => {
+      btn.style.background = colors.scaleInputBg || "#3a3a3a";
+      btn.style.color = colors.scaleInputText || "#ffffff";
+    });
+    btn.addEventListener("mouseleave", () => {
+      btn.style.background = "transparent";
+      btn.style.color = colors.toolbarIcon || "#cccccc";
+    });
+    btn.addEventListener("click", onClick);
+    return btn;
   }
 
   private loadImages() {
-    const promises = this.options.imageList.map(src => {
-      return new Promise<HTMLImageElement>((resolve, reject) => {
-        const img = new Image()
-        img.crossOrigin = 'anonymous'
-        img.src = src
-        img.onload = () => resolve(img)
-        img.onerror = () => reject(new Error(`Failed to load image: ${src}`))
-      })
-    })
+    this.imageList = [];
+    this.loadingImages.clear();
+    this.isFirstImageLoaded = false;
 
-    Promise.all(promises).then(imgs => {
-      this.imageList = imgs
-      this.updatePageInfo()
-      this.updateImageInfo()
-      this.fitToScreen()
-    }).catch(error => {
-      console.error('Error loading images:', error)
-    })
+    this.options.imageList.forEach((src, index) => {
+      this.loadingImages.add(index);
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = src;
+
+      img.onload = () => {
+        this.imageList[index] = img;
+        this.loadingImages.delete(index);
+
+        if (index === 0) {
+          if (this.loadingAnimationId) {
+            cancelAnimationFrame(this.loadingAnimationId);
+            this.loadingAnimationId = null;
+          }
+          this.isFirstImageLoaded = true;
+          this.updatePageInfo();
+          this.updateImageInfo();
+          this.fitToScreen();
+        } else {
+          this.updatePageInfo();
+          this.renderThumbnails();
+        }
+      };
+
+      img.onerror = () => {
+        this.loadingImages.delete(index);
+        console.error(`Failed to load image: ${src}`);
+      };
+    });
+
+    this.renderLoading();
+  }
+
+  private renderLoading() {
+    const ctx = this.mainCtx;
+    const canvas = this.mainCanvas;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = "#2a2a2a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 30;
+    
+    const angle = (Date.now() % 1000) / 1000 * Math.PI * 2;
+    
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    
+    ctx.strokeStyle = "#0099ff";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, angle, angle + Math.PI * 1.5);
+    ctx.stroke();
+    
+    ctx.strokeStyle = "#1a1a1a";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, angle + Math.PI * 1.5, angle + Math.PI * 2);
+    ctx.stroke();
+    
+    ctx.restore();
+    
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Loading...", centerX, centerY + radius + 20);
+    
+    if (!this.isFirstImageLoaded) {
+      this.loadingAnimationId = requestAnimationFrame(() => this.renderLoading());
+    } else {
+      this.loadingAnimationId = null;
+    }
   }
 
   private renderAll() {
-    this.renderMainImage()
-    this.renderThumbnails()
+    this.renderMainImage();
+    this.renderThumbnails();
   }
 
   private renderMainImage() {
-    const ctx = this.mainCtx
-    const canvas = this.mainCanvas
-    const img = this.imageList[this.currentIndex]
+    const ctx = this.mainCtx;
+    const canvas = this.mainCanvas;
+    const img = this.imageList[this.currentIndex];
 
-    if (!img) return
+    if (!img) return;
 
-    const state = this.imageState
+    const state = this.imageState;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.save()
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
 
-    ctx.translate(canvas.width / 2, canvas.height / 2)
-    ctx.rotate((state.rotation * Math.PI) / 180)
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((state.rotation * Math.PI) / 180);
 
     if (state.flipH) {
-      ctx.scale(-1, 1)
+      ctx.scale(-1, 1);
     }
     if (state.flipV) {
-      ctx.scale(1, -1)
+      ctx.scale(1, -1);
     }
 
-    const w = img.width * state.scale
-    const h = img.height * state.scale
-    ctx.drawImage(img, -w / 2 + state.x, -h / 2 + state.y, w, h)
+    const w = img.width * state.scale;
+    const h = img.height * state.scale;
+    ctx.drawImage(img, -w / 2 + state.x, -h / 2 + state.y, w, h);
 
-    ctx.restore()
+    ctx.restore();
 
-    this.updateScaleDisplay()
-    this.renderOverview()
+    this.updateScaleDisplay();
+    this.renderOverview();
   }
 
   private renderThumbnails() {
-    const ctx = this.thumbCtx
-    const canvas = this.thumbCanvas
+    const ctx = this.thumbCtx;
+    const canvas = this.thumbCanvas;
 
-    const totalWidth = this.imageList.length * (this.TW + 15) + 20
-    canvas.width = Math.max(totalWidth, this.options.width)
+    const totalWidth = this.options.imageList.length * (this.TW + 15) + 20;
+    canvas.width = Math.max(totalWidth, this.options.width);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    const colors = this.options.colors;
 
-    ctx.fillStyle = '#2a2a2a'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    this.imageList.forEach((img, index) => {
-      const x = index * (this.TW + 15) + 10
-      const y = (canvas.height - this.TH) / 2
+    ctx.fillStyle = colors.thumbnailBg || "#2a2a2a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let index = 0; index < this.options.imageList.length; index++) {
+      const img = this.imageList[index];
+      const x = index * (this.TW + 15) + 10;
+      const y = (canvas.height - this.TH) / 2;
 
       if (index === this.currentIndex) {
-        ctx.fillStyle = '#0099ff'
-        this.fillRoundRect(ctx, x - 3, y - 3, this.TW + 6, this.TH + 6, this.options.roundRadius)
+        ctx.fillStyle = colors.thumbnailActive || "#0099ff";
+        this.fillRoundRect(
+          ctx,
+          x - 3,
+          y - 3,
+          this.TW + 6,
+          this.TH + 6,
+          this.options.roundRadius,
+        );
       }
 
-      ctx.fillStyle = '#3a3a3a'
-      this.fillRoundRect(ctx, x - 2, y - 2, this.TW + 4, this.TH + 4, this.options.roundRadius)
+      ctx.fillStyle = colors.thumbnailBorder || "#3a3a3a";
+      this.fillRoundRect(
+        ctx,
+        x - 2,
+        y - 2,
+        this.TW + 4,
+        this.TH + 4,
+        this.options.roundRadius,
+      );
 
-      const imgRatio = img.width / img.height
-      const containerRatio = this.TW / this.TH
-      let drawW = this.TW
-      let drawH = this.TH
-      let drawX = x
-      let drawY = y
+      if (img) {
+        const imgRatio = img.width / img.height;
+        const containerRatio = this.TW / this.TH;
+        let drawW = this.TW;
+        let drawH = this.TH;
+        let drawX = x;
+        let drawY = y;
 
-      if (imgRatio > containerRatio) {
-        drawH = this.TW / imgRatio
-        drawY = y + (this.TH - drawH) / 2
+        if (imgRatio > containerRatio) {
+          drawH = this.TW / imgRatio;
+          drawY = y + (this.TH - drawH) / 2;
+        } else {
+          drawW = this.TH * imgRatio;
+          drawX = x + (this.TW - drawW) / 2;
+        }
+
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
       } else {
-        drawW = this.TH * imgRatio
-        drawX = x + (this.TW - drawW) / 2
-      }
+        ctx.fillStyle = "#4a4a4a";
+        this.fillRoundRect(
+          ctx,
+          x,
+          y,
+          this.TW,
+          this.TH,
+          this.options.roundRadius,
+        );
 
-      ctx.drawImage(img, drawX, drawY, drawW, drawH)
-    })
+        ctx.save();
+        ctx.translate(x + this.TW / 2, y + this.TH / 2);
+        ctx.rotate((Date.now() / 20) * Math.PI / 180);
+
+        ctx.strokeStyle = "#0099ff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 6, -Math.PI / 2, Math.PI * 1.5);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
   }
 
   private bindEvents() {
-    this.thumbCanvas.addEventListener('click', (e) => {
-      const rect = this.thumbCanvas.getBoundingClientRect()
-      const x = e.clientX - rect.left + this.thumbScrollContainer.scrollLeft
-      const idx = Math.floor((x - 10) / (this.TW + 15))
+    this.thumbCanvas.addEventListener("click", (e) => {
+      const rect = this.thumbCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left + this.thumbScrollContainer.scrollLeft;
+      const idx = Math.floor((x - 10) / (this.TW + 15));
 
       if (idx >= 0 && idx < this.imageList.length) {
-        this.currentIndex = idx
-        this.updatePageInfo()
-        this.updateImageInfo()
+        this.currentIndex = idx;
+        this.updatePageInfo();
+        this.updateImageInfo();
         if (this.isFitMode) {
-          this.fitToScreen()
+          this.fitToScreen();
         } else {
-          this.resetView()
+          this.resetView();
         }
       }
-    })
+    });
 
-    this.mainCanvas.addEventListener('mousedown', (e) => {
-      this.isDragging = true
-      this.lastX = e.clientX
-      this.lastY = e.clientY
-      this.mainCanvas.style.cursor = 'grabbing'
-    })
+    this.mainCanvas.addEventListener("mousedown", (e) => {
+      this.isDragging = true;
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
+      this.mainCanvas.style.cursor = "grabbing";
+    });
 
-    window.addEventListener('mousemove', (e) => {
-      if (!this.isDragging) return
+    window.addEventListener("mousemove", (e) => {
+      if (!this.isDragging) return;
 
-      let deltaX = e.clientX - this.lastX
-      let deltaY = e.clientY - this.lastY
+      let deltaX = e.clientX - this.lastX;
+      let deltaY = e.clientY - this.lastY;
 
       if (this.imageState.flipH) {
-        deltaX = -deltaX
+        deltaX = -deltaX;
       }
       if (this.imageState.flipV) {
-        deltaY = -deltaY
+        deltaY = -deltaY;
       }
 
-      this.imageState.x += deltaX
-      this.imageState.y += deltaY
-      this.lastX = e.clientX
-      this.lastY = e.clientY
-      this.renderMainImage()
-    })
+      this.imageState.x += deltaX;
+      this.imageState.y += deltaY;
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
+      this.renderMainImage();
+    });
 
-    window.addEventListener('mouseup', () => {
-      this.isDragging = false
-      this.mainCanvas.style.cursor = 'grab'
-    })
+    window.addEventListener("mouseup", () => {
+      this.isDragging = false;
+      this.mainCanvas.style.cursor = "grab";
+    });
 
-    this.mainCanvas.addEventListener('wheel', (e) => {
-      e.preventDefault()
-      const delta = e.deltaY > 0 ? 0.9 : 1.1
-      const newScale = Math.max(0.1, Math.min(10, this.imageState.scale * delta))
+    this.mainCanvas.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        const newScale = Math.max(
+          0.1,
+          Math.min(10, this.imageState.scale * delta),
+        );
 
-      if (newScale !== this.imageState.scale) {
-        const rect = this.mainCanvas.getBoundingClientRect()
-        const mouseX = e.clientX - rect.left
-        const mouseY = e.clientY - rect.top
+        if (newScale !== this.imageState.scale) {
+          const rect = this.mainCanvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
 
-        const canvasCenterX = this.mainCanvas.width / 2
-        const canvasCenterY = this.mainCanvas.height / 2
+          const canvasCenterX = this.mainCanvas.width / 2;
+          const canvasCenterY = this.mainCanvas.height / 2;
 
-        const imageX = mouseX - canvasCenterX - this.imageState.x
-        const imageY = mouseY - canvasCenterY - this.imageState.y
+          const imageX = mouseX - canvasCenterX - this.imageState.x;
+          const imageY = mouseY - canvasCenterY - this.imageState.y;
 
-        const scaleDiff = newScale / this.imageState.scale
+          const scaleDiff = newScale / this.imageState.scale;
 
-        this.imageState.x = mouseX - canvasCenterX - imageX * scaleDiff
-        this.imageState.y = mouseY - canvasCenterY - imageY * scaleDiff
-        this.imageState.scale = newScale
+          this.imageState.x = mouseX - canvasCenterX - imageX * scaleDiff;
+          this.imageState.y = mouseY - canvasCenterY - imageY * scaleDiff;
+          this.imageState.scale = newScale;
 
-        this.isFitMode = false
-        this.updateFitButton()
-        this.renderMainImage()
-      }
-    }, { passive: false })
+          this.isFitMode = false;
+          this.updateFitButton();
+          this.renderMainImage();
+        }
+      },
+      { passive: false },
+    );
 
-    this.mainCanvas.addEventListener('mouseleave', () => {
-      this.isDragging = false
-      this.mainCanvas.style.cursor = 'grab'
-    })
+    this.mainCanvas.addEventListener("mouseleave", () => {
+      this.isDragging = false;
+      this.mainCanvas.style.cursor = "grab";
+    });
 
-    document.addEventListener('fullscreenchange', () => {
-      const wasFullscreen = this.isFullscreen
-      this.isFullscreen = !!document.fullscreenElement
+    document.addEventListener("fullscreenchange", () => {
+      const wasFullscreen = this.isFullscreen;
+      this.isFullscreen = !!document.fullscreenElement;
 
       if (wasFullscreen !== this.isFullscreen) {
-        this.updateFullscreenButton()
-        this.handleFullscreenResize()
+        this.updateFullscreenButton();
+        this.handleFullscreenResize();
       }
-    })
+    });
 
-    this.overviewCanvas.addEventListener('mousedown', (e) => {
-      e.stopPropagation()
-      this.isDraggingOverview = true
-      this.lastX = e.clientX
-      this.lastY = e.clientY
-    })
+    this.overviewCanvas.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      this.isDraggingOverview = true;
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
+    });
 
-    window.addEventListener('mousemove', (e) => {
-      if (!this.isDraggingOverview) return
+    window.addEventListener("mousemove", (e) => {
+      if (!this.isDraggingOverview) return;
 
-      const rect = this.overviewCanvas.getBoundingClientRect()
-      const mouseX = e.clientX - rect.left
-      const mouseY = e.clientY - rect.top
+      const rect = this.overviewCanvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
 
-      const img = this.imageList[this.currentIndex]
-      if (!img) return
+      const img = this.imageList[this.currentIndex];
+      if (!img) return;
 
-      const imgRatio = img.width / img.height
-      const canvasRatio = this.overviewCanvas.width / this.overviewCanvas.height
+      const imgRatio = img.width / img.height;
+      const canvasRatio =
+        this.overviewCanvas.width / this.overviewCanvas.height;
 
-      let drawW: number
-      let drawH: number
-      let drawX = 0
-      let drawY = 0
+      let drawW: number;
+      let drawH: number;
+      let drawX = 0;
+      let drawY = 0;
 
       if (imgRatio > canvasRatio) {
-        drawW = this.overviewCanvas.width
-        drawH = this.overviewCanvas.width / imgRatio
-        drawY = (this.overviewCanvas.height - drawH) / 2
+        drawW = this.overviewCanvas.width;
+        drawH = this.overviewCanvas.width / imgRatio;
+        drawY = (this.overviewCanvas.height - drawH) / 2;
       } else {
-        drawH = this.overviewCanvas.height
-        drawW = this.overviewCanvas.height * imgRatio
-        drawX = (this.overviewCanvas.width - drawW) / 2
+        drawH = this.overviewCanvas.height;
+        drawW = this.overviewCanvas.height * imgRatio;
+        drawX = (this.overviewCanvas.width - drawW) / 2;
       }
 
-      const deltaX = e.clientX - this.lastX
-      const deltaY = e.clientY - this.lastY
+      const deltaX = e.clientX - this.lastX;
+      const deltaY = e.clientY - this.lastY;
 
-      const overviewDeltaX = deltaX * (img.width / drawW)
-      const overviewDeltaY = deltaY * (img.height / drawH)
+      const overviewDeltaX = deltaX * (img.width / drawW);
+      const overviewDeltaY = deltaY * (img.height / drawH);
 
-      const mainW = this.mainCanvas.width
-      const mainH = this.mainCanvas.height
-      const scale = this.imageState.scale
+      const mainW = this.mainCanvas.width;
+      const mainH = this.mainCanvas.height;
+      const scale = this.imageState.scale;
 
-      const visibleW = mainW / scale
-      const visibleH = mainH / scale
+      const visibleW = mainW / scale;
+      const visibleH = mainH / scale;
 
-      const newVisibleX = (-this.imageState.x - mainW / 2 + (img.width * scale) / 2) / scale + overviewDeltaX
-      const newVisibleY = (-this.imageState.y - mainH / 2 + (img.height * scale) / 2) / scale + overviewDeltaY
+      const newVisibleX =
+        (-this.imageState.x - mainW / 2 + (img.width * scale) / 2) / scale +
+        overviewDeltaX;
+      const newVisibleY =
+        (-this.imageState.y - mainH / 2 + (img.height * scale) / 2) / scale +
+        overviewDeltaY;
 
-      const clampedX = Math.max(0, Math.min(img.width - visibleW, newVisibleX))
-      const clampedY = Math.max(0, Math.min(img.height - visibleH, newVisibleY))
+      const clampedX = Math.max(0, Math.min(img.width - visibleW, newVisibleX));
+      const clampedY = Math.max(
+        0,
+        Math.min(img.height - visibleH, newVisibleY),
+      );
 
-      const deltaClampedX = clampedX - ((-this.imageState.x - mainW / 2 + (img.width * scale) / 2) / scale)
-      const deltaClampedY = clampedY - ((-this.imageState.y - mainH / 2 + (img.height * scale) / 2) / scale)
+      const deltaClampedX =
+        clampedX -
+        (-this.imageState.x - mainW / 2 + (img.width * scale) / 2) / scale;
+      const deltaClampedY =
+        clampedY -
+        (-this.imageState.y - mainH / 2 + (img.height * scale) / 2) / scale;
 
-      this.imageState.x -= deltaClampedX * scale
-      this.imageState.y -= deltaClampedY * scale
+      this.imageState.x -= deltaClampedX * scale;
+      this.imageState.y -= deltaClampedY * scale;
 
-      this.lastX = e.clientX
-      this.lastY = e.clientY
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
 
-      this.renderMainImage()
-    })
+      this.renderMainImage();
+    });
 
-    window.addEventListener('mouseup', () => {
+    window.addEventListener("mouseup", () => {
       if (this.isDraggingOverview) {
-        this.isDraggingOverview = false
+        this.isDraggingOverview = false;
       }
-    })
+    });
   }
 
-  private fillRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
-    ctx.beginPath()
-    ctx.moveTo(x + radius, y)
-    ctx.lineTo(x + width - radius, y)
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius)
-    ctx.lineTo(x + width, y + height - radius)
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
-    ctx.lineTo(x + radius, y + height)
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius)
-    ctx.lineTo(x, y + radius)
-    ctx.quadraticCurveTo(x, y, x + radius, y)
-    ctx.closePath()
-    ctx.fill()
+  private fillRoundRect(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    radius: number,
+  ) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.fill();
   }
 
   private updateScaleDisplay() {
-    const percentage = Math.round(this.imageState.scale * 100)
-    ;(this.scaleDisplay as HTMLInputElement).value = `${percentage}%`
+    const percentage = Math.round(this.imageState.scale * 100);
+    (this.scaleDisplay as HTMLInputElement).value = `${percentage}%`;
   }
 
   private updatePageInfo() {
-    const pageInfo = this.toolbarContainer.querySelector('#page-info') as HTMLSpanElement
+    const pageInfo = this.toolbarContainer.querySelector(
+      "#page-info",
+    ) as HTMLSpanElement;
     if (pageInfo) {
-      pageInfo.textContent = `${this.currentIndex + 1}/${this.imageList.length}`
+      pageInfo.textContent = `${this.currentIndex + 1}/${this.imageList.length}`;
     }
   }
 
   private formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 B'
-    
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    if (bytes === 0) return "0 B";
+
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   }
 
   private updateImageInfo() {
-  const img = this.imageList[this.currentIndex]
-  if (!img) return
+    const img = this.imageList[this.currentIndex];
+    if (!img) return;
 
-  const size = `${img.width}×${img.height}像素`
-  
-  if (img instanceof HTMLCanvasElement) {
-    const canvasSize = img.toDataURL('image/png').length * 0.75
-    const fileSize = this.formatFileSize(Math.round(canvasSize))
-    this.infoDisplay.textContent = `${fileSize} ${size}`
-  } else if (img.src.startsWith('blob:')) {
-    fetch(img.src)
-      .then(response => response.blob())
-      .then(blob => {
-        const fileSize = this.formatFileSize(blob.size)
-        this.infoDisplay.textContent = `${fileSize} ${size}`
-      })
-      .catch(() => {
-        this.infoDisplay.textContent = size
-      })
-  } else {
-    this.infoDisplay.textContent = size
+    const size = `${img.width}×${img.height}像素`;
+    this.infoDisplay.textContent = size;
   }
-}
 
   private zoom(factor: number) {
-    const newScale = this.imageState.scale * factor
+    const newScale = this.imageState.scale * factor;
     if (newScale >= 0.1 && newScale <= 10) {
-      this.imageState.scale = newScale
-      this.isFitMode = false
-      this.updateFitButton()
-      this.renderMainImage()
+      this.imageState.scale = newScale;
+      this.isFitMode = false;
+      this.updateFitButton();
+      this.renderMainImage();
     }
   }
 
   private flipHorizontal() {
-    this.imageState.flipH = !this.imageState.flipH
-    this.renderMainImage()
+    this.imageState.flipH = !this.imageState.flipH;
+    this.renderMainImage();
   }
 
   private flipVertical() {
-    this.imageState.flipV = !this.imageState.flipV
-    this.renderMainImage()
+    this.imageState.flipV = !this.imageState.flipV;
+    this.renderMainImage();
   }
 
   public prev() {
-    this.currentIndex = (this.currentIndex - 1 + this.imageList.length) % this.imageList.length
-    this.updatePageInfo()
-    this.updateImageInfo()
+    this.currentIndex =
+      (this.currentIndex - 1 + this.imageList.length) % this.imageList.length;
+    this.updatePageInfo();
+    this.updateImageInfo();
     if (this.isFitMode) {
-      this.fitToScreen()
+      this.fitToScreen();
     } else {
-      this.resetView()
+      this.resetView();
     }
   }
 
   public next() {
-    this.currentIndex = (this.currentIndex + 1) % this.imageList.length
-    this.updatePageInfo()
-    this.updateImageInfo()
+    this.currentIndex = (this.currentIndex + 1) % this.imageList.length;
+    this.updatePageInfo();
+    this.updateImageInfo();
     if (this.isFitMode) {
-      this.fitToScreen()
+      this.fitToScreen();
     } else {
-      this.resetView()
+      this.resetView();
     }
   }
 
   public rotate(angle: number = 90) {
-    this.imageState.rotation = (this.imageState.rotation + angle) % 360
-    this.renderMainImage()
+    this.imageState.rotation = (this.imageState.rotation + angle) % 360;
+    this.renderMainImage();
   }
 
   public resetView() {
-    this.imageState = { scale: 1, x: 0, y: 0, rotation: 0, flipH: false, flipV: false }
-    this.isFitMode = false
-    this.updateFitButton()
-    this.renderMainImage()
+    this.imageState = {
+      scale: 1,
+      x: 0,
+      y: 0,
+      rotation: 0,
+      flipH: false,
+      flipV: false,
+    };
+    this.isFitMode = false;
+    this.updateFitButton();
+    this.renderMainImage();
   }
 
   public fitToScreen() {
-    const img = this.imageList[this.currentIndex]
-    if (!img) return
+    const img = this.imageList[this.currentIndex];
+    if (!img) return;
 
-    const canvas = this.mainCanvas
-    const scaleX = canvas.width / img.width
-    const scaleY = canvas.height / img.height
-    this.imageState.scale = Math.min(scaleX, scaleY)
-    this.imageState.x = 0
-    this.imageState.y = 0
-    this.isFitMode = true
-    this.updateFitButton()
-    this.renderAll()
+    const canvas = this.mainCanvas;
+    const ctx = this.mainCtx;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const scaleX = canvas.width / img.width;
+    const scaleY = canvas.height / img.height;
+    this.imageState.scale = Math.min(scaleX, scaleY);
+    this.imageState.x = 0;
+    this.imageState.y = 0;
+    this.isFitMode = true;
+    this.updateFitButton();
+    this.renderAll();
   }
 
   public toggleFitMode() {
     if (this.isFitMode) {
-      this.resetView()
-      this.isFitMode = false
+      this.resetView();
+      this.isFitMode = false;
     } else {
-      this.fitToScreen()
-      this.isFitMode = true
+      this.fitToScreen();
+      this.isFitMode = true;
     }
-    this.updateFitButton()
+    this.updateFitButton();
   }
 
   private updateFitButton() {
     if (this.fitBtn) {
       if (this.isFitMode) {
-        this.fitBtn.innerHTML = Icons.AspectRatio
-        this.fitBtn.title = '实际大小'
+        this.fitBtn.innerHTML = Icons.AspectRatio;
+        this.fitBtn.title = "实际大小";
       } else {
-        this.fitBtn.innerHTML = Icons.FitToScreen
-        this.fitBtn.title = '适应屏幕'
+        this.fitBtn.innerHTML = Icons.FitToScreen;
+        this.fitBtn.title = "适应屏幕";
       }
     }
   }
 
   public toggleThumbnails() {
-    this.showThumbnails = !this.showThumbnails
-    this.thumbScrollContainer.style.display = this.showThumbnails ? 'block' : 'none'
-    this.mainCanvas.height = this.options.height - (this.showThumbnails ? this.options.thumbnailHeight : 0) - this.options.toolbarHeight
-    this.renderMainImage()
+    this.showThumbnails = !this.showThumbnails;
+    this.thumbScrollContainer.style.display = this.showThumbnails
+      ? "block"
+      : "none";
+    this.mainCanvas.height =
+      this.options.height -
+      (this.showThumbnails ? this.options.thumbnailHeight : 0) -
+      this.options.toolbarHeight;
+    this.renderMainImage();
   }
 
   public getCurrentIndex(): number {
-    return this.currentIndex
+    return this.currentIndex;
   }
 
   public setCurrentIndex(index: number) {
     if (index >= 0 && index < this.imageList.length) {
-      this.currentIndex = index
-      this.updatePageInfo()
-      this.updateImageInfo()
+      this.currentIndex = index;
+      this.updatePageInfo();
+      this.updateImageInfo();
       if (this.isFitMode) {
-        this.fitToScreen()
+        this.fitToScreen();
       } else {
-        this.resetView()
+        this.resetView();
       }
     }
   }
 
   public getImageCount(): number {
-    return this.imageList.length
+    return this.imageList.length;
   }
 
   public handleDelete() {
-    const index = this.currentIndex
-    
+    const index = this.currentIndex;
+
     if (this.options.onDelete) {
-      this.options.onDelete(index)
+      this.options.onDelete(index);
     } else {
-      this.removeImage(index)
+      this.removeImage(index);
     }
   }
 
   public removeImage(index: number) {
-    if (index < 0 || index >= this.imageList.length) return
+    if (index < 0 || index >= this.imageList.length) return;
 
-    this.imageList.splice(index, 1)
-    
+    this.imageList.splice(index, 1);
+
     if (this.currentIndex >= this.imageList.length) {
-      this.currentIndex = Math.max(0, this.imageList.length - 1)
+      this.currentIndex = Math.max(0, this.imageList.length - 1);
     }
 
-    this.updatePageInfo()
-    this.updateImageInfo()
-    
+    this.updatePageInfo();
+    this.updateImageInfo();
+
     if (this.imageList.length > 0) {
       if (this.isFitMode) {
-        this.fitToScreen()
+        this.fitToScreen();
       } else {
-        this.resetView()
+        this.resetView();
       }
     } else {
-      this.mainCtx.clearRect(0, 0, this.mainCanvas.width, this.mainCanvas.height)
-      this.thumbCtx.clearRect(0, 0, this.thumbCanvas.width, this.thumbCanvas.height)
+      this.mainCtx.clearRect(
+        0,
+        0,
+        this.mainCanvas.width,
+        this.mainCanvas.height,
+      );
+      this.thumbCtx.clearRect(
+        0,
+        0,
+        this.thumbCanvas.width,
+        this.thumbCanvas.height,
+      );
     }
   }
 
   public toggleFullscreen() {
     if (!document.fullscreenElement) {
-      this.container.requestFullscreen?.().then(() => {
-        this.isFullscreen = true
-        this.updateFullscreenButton()
-        this.handleFullscreenResize()
-      }).catch(err => {
-        console.error('Failed to enter fullscreen:', err)
-      })
+      this.container
+        .requestFullscreen?.()
+        .then(() => {
+          this.isFullscreen = true;
+          this.updateFullscreenButton();
+          this.handleFullscreenResize();
+        })
+        .catch((err) => {
+          console.error("Failed to enter fullscreen:", err);
+        });
     } else {
-      document.exitFullscreen?.().then(() => {
-        this.isFullscreen = false
-        this.updateFullscreenButton()
-        this.handleFullscreenResize()
-      }).catch(err => {
-        console.error('Failed to exit fullscreen:', err)
-      })
+      document
+        .exitFullscreen?.()
+        .then(() => {
+          this.isFullscreen = false;
+          this.updateFullscreenButton();
+          this.handleFullscreenResize();
+        })
+        .catch((err) => {
+          console.error("Failed to exit fullscreen:", err);
+        });
     }
   }
 
   private updateFullscreenButton() {
     if (this.fullscreenBtn) {
       if (this.isFullscreen) {
-        this.fullscreenBtn.innerHTML = Icons.FullscreenExit
-        this.fullscreenBtn.title = '退出全屏'
+        this.fullscreenBtn.innerHTML = Icons.FullscreenExit;
+        this.fullscreenBtn.title = "退出全屏";
       } else {
-        this.fullscreenBtn.innerHTML = Icons.Fullscreen
-        this.fullscreenBtn.title = '切换全屏'
+        this.fullscreenBtn.innerHTML = Icons.Fullscreen;
+        this.fullscreenBtn.title = "切换全屏";
       }
     }
   }
 
   private handleFullscreenResize() {
     if (this.isFullscreen) {
-      const width = window.innerWidth
-      const height = window.innerHeight
+      const width = window.innerWidth;
+      const height = window.innerHeight;
 
-      this.container.style.width = width + 'px'
-      this.container.style.height = height + 'px'
-      this.container.style.position = 'fixed'
-      this.container.style.top = '0'
-      this.container.style.left = '0'
-      this.container.style.zIndex = '9999'
+      this.container.style.width = width + "px";
+      this.container.style.height = height + "px";
+      this.container.style.position = "fixed";
+      this.container.style.top = "0";
+      this.container.style.left = "0";
+      this.container.style.zIndex = "9999";
 
-      this.mainCanvas.width = width
-      this.mainCanvas.height = height - this.options.thumbnailHeight - this.options.toolbarHeight
+      this.mainCanvas.width = width;
+      this.mainCanvas.height =
+        height - this.options.thumbnailHeight - this.options.toolbarHeight;
 
-      this.thumbScrollContainer.style.width = width + 'px'
-      this.thumbCanvas.width = Math.max(this.imageList.length * (this.TW + 15) + 20, width)
-      this.thumbCanvas.height = this.options.thumbnailHeight
+      this.thumbScrollContainer.style.width = width + "px";
+      this.thumbCanvas.width = Math.max(
+        this.imageList.length * (this.TW + 15) + 20,
+        width,
+      );
+      this.thumbCanvas.height = this.options.thumbnailHeight;
 
-      this.toolbarContainer.style.width = width + 'px'
+      this.toolbarContainer.style.width = width + "px";
     } else {
-      this.container.style.width = this.options.width + 'px'
-      this.container.style.height = this.options.height + 'px'
-      this.container.style.position = 'relative'
-      this.container.style.top = 'auto'
-      this.container.style.left = 'auto'
-      this.container.style.zIndex = 'auto'
+      this.container.style.width = this.options.width + "px";
+      this.container.style.height = this.options.height + "px";
+      this.container.style.position = "relative";
+      this.container.style.top = "auto";
+      this.container.style.left = "auto";
+      this.container.style.zIndex = "auto";
 
-      this.mainCanvas.width = this.options.width
-      this.mainCanvas.height = this.options.height - this.options.thumbnailHeight - this.options.toolbarHeight
+      this.mainCanvas.width = this.options.width;
+      this.mainCanvas.height =
+        this.options.height -
+        this.options.thumbnailHeight -
+        this.options.toolbarHeight;
 
-      this.thumbScrollContainer.style.width = this.options.width + 'px'
-      this.thumbCanvas.width = Math.max(this.imageList.length * (this.TW + 15) + 20, this.options.width)
-      this.thumbCanvas.height = this.options.thumbnailHeight
+      this.thumbScrollContainer.style.width = this.options.width + "px";
+      this.thumbCanvas.width = Math.max(
+        this.imageList.length * (this.TW + 15) + 20,
+        this.options.width,
+      );
+      this.thumbCanvas.height = this.options.thumbnailHeight;
 
-      this.toolbarContainer.style.width = this.options.width + 'px'
+      this.toolbarContainer.style.width = this.options.width + "px";
     }
 
     if (this.imageList.length > 0) {
-      this.renderThumbnails()
+      this.renderThumbnails();
       if (this.isFitMode) {
-        this.fitToScreen()
+        this.fitToScreen();
       } else {
-        this.resetView()
+        this.resetView();
       }
     }
   }
 
   public toggleOverview() {
-    this.showOverview = !this.showOverview
-    this.overviewContainer.style.display = this.showOverview ? 'block' : 'none'
-    this.overviewBtn.innerHTML = this.showOverview ? Icons.OverviewOff : Icons.OverviewOn
+    this.showOverview = !this.showOverview;
+    this.overviewContainer.style.display = this.showOverview ? "block" : "none";
+    this.overviewBtn.innerHTML = this.showOverview
+      ? Icons.OverviewOff
+      : Icons.OverviewOn;
   }
 
   public renderOverview() {
-    if (!this.showOverview) return
+    if (!this.showOverview) return;
 
-    const ctx = this.overviewCtx
-    const canvas = this.overviewCanvas
-    const img = this.imageList[this.currentIndex]
+    const ctx = this.overviewCtx;
+    const canvas = this.overviewCanvas;
+    const img = this.imageList[this.currentIndex];
 
-    if (!img) return
+    if (!img) return;
+    const colors = this.options.colors;
 
-    const state = this.imageState
+    const state = this.imageState;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const imgRatio = img.width / img.height
-    const canvasRatio = canvas.width / canvas.height
+    const imgRatio = img.width / img.height;
+    const canvasRatio = canvas.width / canvas.height;
 
-    let drawW: number
-    let drawH: number
-    let drawX = 0
-    let drawY = 0
+    let drawW: number;
+    let drawH: number;
+    let drawX = 0;
+    let drawY = 0;
 
     if (imgRatio > canvasRatio) {
-      drawW = canvas.width
-      drawH = canvas.width / imgRatio
-      drawY = (canvas.height - drawH) / 2
+      drawW = canvas.width;
+      drawH = canvas.width / imgRatio;
+      drawY = (canvas.height - drawH) / 2;
     } else {
-      drawH = canvas.height
-      drawW = canvas.height * imgRatio
-      drawX = (canvas.width - drawW) / 2
+      drawH = canvas.height;
+      drawW = canvas.height * imgRatio;
+      drawX = (canvas.width - drawW) / 2;
     }
 
-    ctx.save()
+    ctx.save();
 
-    const centerX = canvas.width / 2
-    const centerY = canvas.height / 2
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
 
-    ctx.translate(centerX, centerY)
+    ctx.translate(centerX, centerY);
 
     if (state.flipH) {
-      ctx.scale(-1, 1)
+      ctx.scale(-1, 1);
     }
     if (state.flipV) {
-      ctx.scale(1, -1)
+      ctx.scale(1, -1);
     }
 
-    ctx.drawImage(img, drawX - centerX, drawY - centerY, drawW, drawH)
+    ctx.drawImage(img, drawX - centerX, drawY - centerY, drawW, drawH);
 
-    ctx.restore()
+    ctx.restore();
 
-    const scale = state.scale
-    const mainW = this.mainCanvas.width
-    const mainH = this.mainCanvas.height
+    const scale = state.scale;
+    const mainW = this.mainCanvas.width;
+    const mainH = this.mainCanvas.height;
 
-    const imgDisplayW = img.width * scale
-    const imgDisplayH = img.height * scale
+    const imgDisplayW = img.width * scale;
+    const imgDisplayH = img.height * scale;
 
-    const canvasCenterX = mainW / 2
-    const canvasCenterY = mainH / 2
+    const canvasCenterX = mainW / 2;
+    const canvasCenterY = mainH / 2;
 
-    const imgLeftOnCanvas = -imgDisplayW / 2 + state.x + canvasCenterX
-    const imgTopOnCanvas = -imgDisplayH / 2 + state.y + canvasCenterY
+    const imgLeftOnCanvas = -imgDisplayW / 2 + state.x + canvasCenterX;
+    const imgTopOnCanvas = -imgDisplayH / 2 + state.y + canvasCenterY;
 
-    let visibleX = -imgLeftOnCanvas / scale
-    let visibleY = -imgTopOnCanvas / scale
-    let visibleW = mainW / scale
-    let visibleH = mainH / scale
+    let visibleX = -imgLeftOnCanvas / scale;
+    let visibleY = -imgTopOnCanvas / scale;
+    let visibleW = mainW / scale;
+    let visibleH = mainH / scale;
 
-    visibleW = Math.min(visibleW, img.width)
-    visibleH = Math.min(visibleH, img.height)
+    visibleW = Math.min(visibleW, img.width);
+    visibleH = Math.min(visibleH, img.height);
 
-    visibleX = Math.max(0, Math.min(img.width - visibleW, visibleX))
-    visibleY = Math.max(0, Math.min(img.height - visibleH, visibleY))
+    visibleX = Math.max(0, Math.min(img.width - visibleW, visibleX));
+    visibleY = Math.max(0, Math.min(img.height - visibleH, visibleY));
 
     if (state.flipH) {
-      visibleX = img.width - visibleX - visibleW
+      visibleX = img.width - visibleX - visibleW;
     }
     if (state.flipV) {
-      visibleY = img.height - visibleY - visibleH
+      visibleY = img.height - visibleY - visibleH;
     }
 
-    const rectX = drawX + (visibleX / img.width) * drawW
-    const rectY = drawY + (visibleY / img.height) * drawH
-    const rectW = (visibleW / img.width) * drawW
-    const rectH = (visibleH / img.height) * drawH
+    const rectX = drawX + (visibleX / img.width) * drawW;
+    const rectY = drawY + (visibleY / img.height) * drawH;
+    const rectW = (visibleW / img.width) * drawW;
+    const rectH = (visibleH / img.height) * drawH;
 
-    ctx.fillStyle = 'rgba(0, 153, 255, 0.3)'
-    ctx.fillRect(rectX, rectY, rectW, rectH)
+    ctx.fillStyle = colors.overviewMask || "rgba(0, 153, 255, 0.3)";
+    ctx.fillRect(rectX, rectY, rectW, rectH);
 
-    ctx.strokeStyle = '#0099ff'
-    ctx.lineWidth = 1
-    ctx.strokeRect(rectX, rectY, rectW, rectH)
+    ctx.strokeStyle = colors.overviewMaskBorder || "#0099ff";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(rectX, rectY, rectW, rectH);
   }
 
   public destroy() {
-    this.container.innerHTML = ''
-    this.imageList = []
-    this.imageState = { scale: 1, x: 0, y: 0, rotation: 0, flipH: false, flipV: false }
+    this.container.innerHTML = "";
+    this.imageList = [];
+    this.imageState = {
+      scale: 1,
+      x: 0,
+      y: 0,
+      rotation: 0,
+      flipH: false,
+      flipV: false,
+    };
   }
 }
