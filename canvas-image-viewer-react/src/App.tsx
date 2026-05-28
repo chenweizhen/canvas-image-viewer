@@ -58,6 +58,7 @@ function App() {
         imageList: imageList,
         width: 1000,
         height: 650,
+        language: "en-US",
         onDelete: (index) => {
           console.log(index)
           viewerRef.current?.removeImage(index)

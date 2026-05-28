@@ -1,5 +1,6 @@
 import type { ImageViewerOptions, ImageState } from "./types";
 import { Icons } from "./icon";
+import { Languages, LanguageOptions, LanguageKey } from "./language";
 
 export class ImageViewer {
   private options: Required<ImageViewerOptions>;
@@ -8,6 +9,8 @@ export class ImageViewer {
   private thumbCanvas!: HTMLCanvasElement;
   private overviewCanvas!: HTMLCanvasElement;
   private overviewCtx!: CanvasRenderingContext2D;
+  private currentLanguage!: LanguageOptions;
+  private translate!: (key: LanguageKey) => string;
   private overviewContainer!: HTMLElement;
   private mainCtx!: CanvasRenderingContext2D;
   private thumbCtx!: CanvasRenderingContext2D;
@@ -18,6 +21,8 @@ export class ImageViewer {
   private fitBtn!: HTMLButtonElement;
   private fullscreenBtn!: HTMLButtonElement;
   private overviewBtn!: HTMLButtonElement;
+  private leftArrow!: HTMLButtonElement;
+  private rightArrow!: HTMLButtonElement;
   private showThumbnails = true;
   private showOverview = true;
   private isFitMode = true;
@@ -31,6 +36,9 @@ export class ImageViewer {
   private loadingImages = new Set<number>();
   private isFirstImageLoaded = false;
   private loadingAnimationId: number | null = null;
+  private fadeAnimationId: number | null = null;
+  private currentFadeAlpha = 1;
+  private isAnimating = false;
 
   private currentIndex = 0;
   private imageList: HTMLImageElement[] = [];
@@ -62,6 +70,8 @@ export class ImageViewer {
         roundRadius: 4,
         onDelete: () => {},
         colors: {},
+        language: "zh-CN",
+        customLanguage: {},
       },
       options,
     );
@@ -69,6 +79,7 @@ export class ImageViewer {
     this.options.colors = Object.assign(
       {
         containerBg: "#1a1a1a",
+        navigatorBg: "rgba(0, 0, 0, 0.5)",
         toolbarBg: "#2a2a2a",
         toolbarIcon: "#cccccc",
         thumbnailBg: "#2a2a2a",
@@ -84,6 +95,16 @@ export class ImageViewer {
       },
       this.options.colors,
     );
+
+    this.currentLanguage = Object.assign(
+      {},
+      Languages[this.options.language || "zh-CN"],
+      this.options.customLanguage || {}
+    );
+
+    this.translate = (key: LanguageKey) => {
+      return this.currentLanguage[key] || Languages["zh-CN"][key] || key;
+    };
 
     this.container = options.container;
     this.initCanvas();
@@ -109,6 +130,8 @@ export class ImageViewer {
     this.mainCanvas.style.display = "block";
     this.mainCtx = this.mainCanvas.getContext("2d")!;
 
+    this.createNavigationArrows();
+
     this.thumbScrollContainer = document.createElement("div");
     this.thumbScrollContainer.classList.add("thumb-scroll-container");
     this.thumbScrollContainer.style.position = "relative";
@@ -126,6 +149,15 @@ export class ImageViewer {
 
     this.thumbScrollContainer.addEventListener("mouseleave", () => {
       this.thumbScrollContainer.style.overflowX = "hidden";
+    });
+
+    let scrollRAF: number | null = null;
+    this.thumbScrollContainer.addEventListener("scroll", () => {
+      if (scrollRAF) return;
+      scrollRAF = requestAnimationFrame(() => {
+        this.renderThumbnails();
+        scrollRAF = null;
+      });
     });
 
     const scrollbarStyle = document.createElement("style");
@@ -201,7 +233,7 @@ export class ImageViewer {
     this.fitBtn = this.createToolbarButton("FitToScreen", () =>
       this.toggleFitMode(),
     );
-    this.fitBtn.title = "适应屏幕";
+    this.fitBtn.title = this.translate("fitToScreen");
     centerSection.appendChild(this.fitBtn);
 
     const scaleContainer = document.createElement("div");
@@ -242,7 +274,7 @@ export class ImageViewer {
     scaleArrow.style.display = "flex";
     scaleArrow.style.alignItems = "center";
     scaleArrow.style.justifyContent = "center";
-    scaleArrow.title = "缩放选项";
+    scaleArrow.title = this.translate("zoomIn");
 
     scaleArrow.addEventListener("mouseenter", () => {
       scaleArrow.style.color = colors.scaleInputText || "#ffffff";
@@ -347,43 +379,43 @@ export class ImageViewer {
     centerSection.appendChild(scaleContainer);
 
     const zoomInBtn = this.createToolbarButton("ZoomIn", () => this.zoom(1.1));
-    zoomInBtn.title = "放大";
+    zoomInBtn.title = this.translate("zoomIn");
     centerSection.appendChild(zoomInBtn);
 
     const zoomOutBtn = this.createToolbarButton("ZoomOut", () =>
       this.zoom(0.9),
     );
-    zoomOutBtn.title = "缩小";
+    zoomOutBtn.title = this.translate("zoomOut");
     centerSection.appendChild(zoomOutBtn);
 
     const rotateLeftBtn = this.createToolbarButton("RotateLeft", () =>
       this.rotate(-90),
     );
-    rotateLeftBtn.title = "向左旋转";
+    rotateLeftBtn.title = this.translate("rotateLeft");
     centerSection.appendChild(rotateLeftBtn);
 
     const rotateRightBtn = this.createToolbarButton("RotateRight", () =>
       this.rotate(90),
     );
-    rotateRightBtn.title = "向右旋转";
+    rotateRightBtn.title = this.translate("rotateRight");
     centerSection.appendChild(rotateRightBtn);
 
     const flipHBtn = this.createToolbarButton("FlipHorizontal", () =>
       this.flipHorizontal(),
     );
-    flipHBtn.title = "水平翻转";
+    flipHBtn.title = this.translate("flipHorizontal");
     centerSection.appendChild(flipHBtn);
 
     const flipVBtn = this.createToolbarButton("FlipVertical", () =>
       this.flipVertical(),
     );
-    flipVBtn.title = "垂直翻转";
+    flipVBtn.title = this.translate("flipVertical");
     centerSection.appendChild(flipVBtn);
 
     const deleteBtn = this.createToolbarButton("Delete", () =>
       this.handleDelete(),
     );
-    deleteBtn.title = "删除";
+    deleteBtn.title = this.translate("delete");
     centerSection.appendChild(deleteBtn);
 
     const rightSection = document.createElement("div");
@@ -394,19 +426,19 @@ export class ImageViewer {
     const thumbToggleBtn = this.createToolbarButton("Slideshow", () =>
       this.toggleThumbnails(),
     );
-    thumbToggleBtn.title = "切换缩略图显示";
+    thumbToggleBtn.title = this.translate("toggleThumbnails");
     rightSection.appendChild(thumbToggleBtn);
 
     this.overviewBtn = this.createToolbarButton("OverviewOff", () =>
       this.toggleOverview(),
     );
-    this.overviewBtn.title = "切换鸟瞰图显示";
+    this.overviewBtn.title = this.translate("overview");
     rightSection.appendChild(this.overviewBtn);
 
     this.fullscreenBtn = this.createToolbarButton("Fullscreen", () =>
       this.toggleFullscreen(),
     );
-    this.fullscreenBtn.title = "切换全屏";
+    this.fullscreenBtn.title = this.translate("toggleFullscreen");
     rightSection.appendChild(this.fullscreenBtn);
 
     this.toolbarContainer.appendChild(leftSection);
@@ -476,7 +508,7 @@ export class ImageViewer {
     const overviewTitle = document.createElement("span");
     overviewTitle.style.color = colors.textColor || "#ffffff";
     overviewTitle.style.fontSize = "12px";
-    overviewTitle.textContent = "鸟瞰图";
+    overviewTitle.textContent = this.translate("overview");
     overviewHeader.appendChild(overviewTitle);
 
     const overviewCloseBtn = document.createElement("button");
@@ -488,7 +520,7 @@ export class ImageViewer {
     overviewCloseBtn.style.width = "16px";
     overviewCloseBtn.style.height = "16px";
     overviewCloseBtn.style.cursor = "pointer";
-    overviewCloseBtn.title = "关闭鸟瞰图";
+    overviewCloseBtn.title = this.translate("close");
     overviewCloseBtn.addEventListener("mouseenter", () => {
       overviewCloseBtn.style.color = colors.scaleInputText || "#ffffff";
     });
@@ -587,6 +619,27 @@ export class ImageViewer {
     this.renderLoading();
   }
 
+  private preloadCurrentImage() {
+    const currentSrc = this.options.imageList[this.currentIndex];
+    if (this.imageList[this.currentIndex]) {
+      const nextIndex = (this.currentIndex + 1) % this.options.imageList.length;
+      const nextSrc = this.options.imageList[nextIndex];
+      if (!this.imageList[nextIndex]) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = nextSrc;
+        img.onload = () => {
+          this.imageList[nextIndex] = img;
+          this.loadingImages.delete(nextIndex);
+          this.renderThumbnails();
+        };
+        img.onerror = () => {
+          this.loadingImages.delete(nextIndex);
+        };
+      }
+    }
+  }
+
   private renderLoading() {
     const ctx = this.mainCtx;
     const canvas = this.mainCanvas;
@@ -638,6 +691,32 @@ export class ImageViewer {
     this.renderThumbnails();
   }
 
+  private animateFadeIn(callback: () => void) {
+    this.currentFadeAlpha = 0;
+    this.isAnimating = true;
+
+    const animate = () => {
+      this.currentFadeAlpha += 0.08;
+
+      if (this.currentFadeAlpha >= 1) {
+        this.currentFadeAlpha = 1;
+        this.isAnimating = false;
+        if (this.fadeAnimationId) {
+          cancelAnimationFrame(this.fadeAnimationId);
+          this.fadeAnimationId = null;
+        }
+      }
+
+      callback();
+
+      if (this.isAnimating) {
+        this.fadeAnimationId = requestAnimationFrame(animate);
+      }
+    };
+
+    this.fadeAnimationId = requestAnimationFrame(animate);
+  }
+
   private renderMainImage() {
     const ctx = this.mainCtx;
     const canvas = this.mainCanvas;
@@ -649,6 +728,8 @@ export class ImageViewer {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
+
+    ctx.globalAlpha = this.currentFadeAlpha;
 
     ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.rotate((state.rotation * Math.PI) / 180);
@@ -679,12 +760,25 @@ export class ImageViewer {
 
     const colors = this.options.colors;
 
+    const scrollLeft = this.thumbScrollContainer.scrollLeft;
+    const viewportWidth = this.thumbScrollContainer.clientWidth;
+    const buffer = 3;
+
+    const startIndex = Math.max(0, Math.floor((scrollLeft - 10) / (this.TW + 15)) - buffer);
+    const endIndex = Math.min(
+      this.options.imageList.length,
+      Math.ceil((scrollLeft + viewportWidth + 10) / (this.TW + 15)) + buffer
+    );
+
+    const leftBound = startIndex * (this.TW + 15);
+    const rightBound = endIndex * (this.TW + 15) + this.TW;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = colors.thumbnailBg || "#2a2a2a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    for (let index = 0; index < this.options.imageList.length; index++) {
+    for (let index = startIndex; index < endIndex; index++) {
       const img = this.imageList[index];
       const x = index * (this.TW + 15) + 10;
       const y = (canvas.height - this.TH) / 2;
@@ -754,6 +848,103 @@ export class ImageViewer {
     }
   }
 
+  private createNavigationArrows() {
+    const colors = this.options.colors;
+    const canvasHeight = this.mainCanvas.height;
+    const arrowSize = 40;
+    const hoverZoneWidth = 80;
+
+    this.leftArrow = document.createElement("button");
+    this.leftArrow.innerHTML = Icons.ArrowLeft;
+    this.leftArrow.style.position = "absolute";
+    this.leftArrow.style.left = "10px";
+    this.leftArrow.style.top = "50%";
+    this.leftArrow.style.transform = "translateY(-50%)";
+    this.leftArrow.style.width = arrowSize + "px";
+    this.leftArrow.style.height = arrowSize + "px";
+    this.leftArrow.style.background = colors.navigatorBg || "rgba(0, 0, 0, 0.5)";
+    this.leftArrow.style.border = "none";
+    this.leftArrow.style.borderRadius = "50%";
+    this.leftArrow.style.color = colors.toolbarIcon || "#cccccc";
+    this.leftArrow.style.display = "flex";
+    this.leftArrow.style.alignItems = "center";
+    this.leftArrow.style.justifyContent = "center";
+    this.leftArrow.style.opacity = "0";
+    this.leftArrow.style.transition = "opacity 0.3s ease";
+    this.leftArrow.style.cursor = "pointer";
+    this.leftArrow.style.zIndex = "10";
+    this.leftArrow.style.padding = "12px";
+    this.leftArrow.title = this.translate("prev");
+    this.leftArrow.addEventListener("click", () => this.prev());
+    this.leftArrow.addEventListener("mouseenter", () => {
+      this.leftArrow.style.opacity = "1";
+    });
+    this.leftArrow.addEventListener("mouseleave", (e) => {
+      const rect = this.mainCanvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left || -1;
+      if (mouseX < 0 || mouseX > rect.width) {
+        this.leftArrow.style.opacity = "0";
+      }
+    });
+    this.container.appendChild(this.leftArrow);
+
+    this.rightArrow = document.createElement("button");
+    this.rightArrow.innerHTML = Icons.ArrowRight;
+    this.rightArrow.style.position = "absolute";
+    this.rightArrow.style.right = "10px";
+    this.rightArrow.style.top = "50%";
+    this.rightArrow.style.transform = "translateY(-50%)";
+    this.rightArrow.style.width = arrowSize + "px";
+    this.rightArrow.style.height = arrowSize + "px";
+    this.rightArrow.style.background = colors.navigatorBg || "rgba(0, 0, 0, 0.5)";
+    this.rightArrow.style.border = "none";
+    this.rightArrow.style.borderRadius = "50%";
+    this.rightArrow.style.color = colors.toolbarIcon || "#cccccc";
+    this.rightArrow.style.display = "flex";
+    this.rightArrow.style.alignItems = "center";
+    this.rightArrow.style.justifyContent = "center";
+    this.rightArrow.style.opacity = "0";
+    this.rightArrow.style.transition = "opacity 0.3s ease";
+    this.rightArrow.style.cursor = "pointer";
+    this.rightArrow.style.zIndex = "10";
+    this.rightArrow.style.padding = "12px";
+    this.rightArrow.title = this.translate("next");
+    this.rightArrow.addEventListener("click", () => this.next());
+    this.rightArrow.addEventListener("mouseenter", () => {
+      this.rightArrow.style.opacity = "1";
+    });
+    this.rightArrow.addEventListener("mouseleave", (e) => {
+      const rect = this.mainCanvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left || -1;
+      if (mouseX < 0 || mouseX > rect.width) {
+        this.rightArrow.style.opacity = "0";
+      }
+    });
+    this.container.appendChild(this.rightArrow);
+
+    this.mainCanvas.addEventListener("mousemove", (e) => {
+      const rect = this.mainCanvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+
+      if (mouseX < hoverZoneWidth) {
+        this.leftArrow.style.opacity = "1";
+      } else {
+        this.leftArrow.style.opacity = "0";
+      }
+
+      if (mouseX > rect.width - hoverZoneWidth) {
+        this.rightArrow.style.opacity = "1";
+      } else {
+        this.rightArrow.style.opacity = "0";
+      }
+    });
+
+    this.mainCanvas.addEventListener("mouseleave", () => {
+      this.leftArrow.style.opacity = "0";
+      this.rightArrow.style.opacity = "0";
+    });
+  }
+
   private bindEvents() {
     this.thumbCanvas.addEventListener("click", (e) => {
       const rect = this.thumbCanvas.getBoundingClientRect();
@@ -772,6 +963,7 @@ export class ImageViewer {
       }
     });
 
+    let dragRAF: number | null = null;
     this.mainCanvas.addEventListener("mousedown", (e) => {
       this.isDragging = true;
       this.lastX = e.clientX;
@@ -782,21 +974,27 @@ export class ImageViewer {
     window.addEventListener("mousemove", (e) => {
       if (!this.isDragging) return;
 
-      let deltaX = e.clientX - this.lastX;
-      let deltaY = e.clientY - this.lastY;
+      if (dragRAF) return;
 
-      if (this.imageState.flipH) {
-        deltaX = -deltaX;
-      }
-      if (this.imageState.flipV) {
-        deltaY = -deltaY;
-      }
+      dragRAF = requestAnimationFrame(() => {
+        let deltaX = e.clientX - this.lastX;
+        let deltaY = e.clientY - this.lastY;
 
-      this.imageState.x += deltaX;
-      this.imageState.y += deltaY;
-      this.lastX = e.clientX;
-      this.lastY = e.clientY;
-      this.renderMainImage();
+        if (this.imageState.flipH) {
+          deltaX = -deltaX;
+        }
+        if (this.imageState.flipV) {
+          deltaY = -deltaY;
+        }
+
+        this.imageState.x += deltaX;
+        this.imageState.y += deltaY;
+        this.lastX = e.clientX;
+        this.lastY = e.clientY;
+        this.renderMainImage();
+        
+        dragRAF = null;
+      });
     });
 
     window.addEventListener("mouseup", () => {
@@ -804,37 +1002,45 @@ export class ImageViewer {
       this.mainCanvas.style.cursor = "grab";
     });
 
+    let wheelRAF: number | null = null;
     this.mainCanvas.addEventListener(
       "wheel",
       (e) => {
         e.preventDefault();
-        const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.max(
-          0.1,
-          Math.min(10, this.imageState.scale * delta),
-        );
+        
+        if (wheelRAF) return;
+        
+        wheelRAF = requestAnimationFrame(() => {
+          const delta = e.deltaY > 0 ? 0.9 : 1.1;
+          const newScale = Math.max(
+            0.1,
+            Math.min(10, this.imageState.scale * delta),
+          );
 
-        if (newScale !== this.imageState.scale) {
-          const rect = this.mainCanvas.getBoundingClientRect();
-          const mouseX = e.clientX - rect.left;
-          const mouseY = e.clientY - rect.top;
+          if (newScale !== this.imageState.scale) {
+            const rect = this.mainCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
 
-          const canvasCenterX = this.mainCanvas.width / 2;
-          const canvasCenterY = this.mainCanvas.height / 2;
+            const canvasCenterX = this.mainCanvas.width / 2;
+            const canvasCenterY = this.mainCanvas.height / 2;
 
-          const imageX = mouseX - canvasCenterX - this.imageState.x;
-          const imageY = mouseY - canvasCenterY - this.imageState.y;
+            const imageX = mouseX - canvasCenterX - this.imageState.x;
+            const imageY = mouseY - canvasCenterY - this.imageState.y;
 
-          const scaleDiff = newScale / this.imageState.scale;
+            const scaleDiff = newScale / this.imageState.scale;
 
-          this.imageState.x = mouseX - canvasCenterX - imageX * scaleDiff;
-          this.imageState.y = mouseY - canvasCenterY - imageY * scaleDiff;
-          this.imageState.scale = newScale;
+            this.imageState.x = mouseX - canvasCenterX - imageX * scaleDiff;
+            this.imageState.y = mouseY - canvasCenterY - imageY * scaleDiff;
+            this.imageState.scale = newScale;
 
-          this.isFitMode = false;
-          this.updateFitButton();
-          this.renderMainImage();
-        }
+            this.isFitMode = false;
+            this.updateFitButton();
+            this.renderMainImage();
+          }
+          
+          wheelRAF = null;
+        });
       },
       { passive: false },
     );
@@ -937,6 +1143,55 @@ export class ImageViewer {
         this.isDraggingOverview = false;
       }
     });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key) {
+        case "ArrowLeft":
+          e.preventDefault();
+          this.prev();
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          this.next();
+          break;
+        case "+":
+        case "=":
+          e.preventDefault();
+          this.zoomIn();
+          break;
+        case "-":
+          e.preventDefault();
+          this.zoomOut();
+          break;
+        case "Home":
+          e.preventDefault();
+          this.first();
+          break;
+        case "End":
+          e.preventDefault();
+          this.last();
+          break;
+        case " ":
+          e.preventDefault();
+          this.toggleFitMode();
+          break;
+        case "Escape":
+          e.preventDefault();
+          if (this.isFullscreen) {
+            this.toggleFullscreen();
+          }
+          break;
+        case "f":
+        case "F":
+          e.preventDefault();
+          this.toggleFullscreen();
+          break;
+      }
+    });
   }
 
   private fillRoundRect(
@@ -989,7 +1244,7 @@ export class ImageViewer {
     const img = this.imageList[this.currentIndex];
     if (!img) return;
 
-    const size = `${img.width}×${img.height}像素`;
+    const size = `${img.width}×${img.height} ${this.translate("pixels")}`;
     this.infoDisplay.textContent = size;
   }
 
@@ -1018,21 +1273,69 @@ export class ImageViewer {
       (this.currentIndex - 1 + this.imageList.length) % this.imageList.length;
     this.updatePageInfo();
     this.updateImageInfo();
+    this.preloadCurrentImage();
     if (this.isFitMode) {
       this.fitToScreen();
     } else {
       this.resetView();
     }
+    this.animateFadeIn(() => this.renderMainImage());
   }
 
   public next() {
     this.currentIndex = (this.currentIndex + 1) % this.imageList.length;
     this.updatePageInfo();
     this.updateImageInfo();
+    this.preloadCurrentImage();
     if (this.isFitMode) {
       this.fitToScreen();
     } else {
       this.resetView();
+    }
+    this.animateFadeIn(() => this.renderMainImage());
+  }
+
+  public zoomIn() {
+    this.isFitMode = false;
+    this.imageState.scale = Math.min(10, this.imageState.scale * 1.2);
+    this.updateFitButton();
+    this.renderMainImage();
+  }
+
+  public zoomOut() {
+    this.isFitMode = false;
+    this.imageState.scale = Math.max(0.1, this.imageState.scale / 1.2);
+    this.updateFitButton();
+    this.renderMainImage();
+  }
+
+  public first() {
+    if (this.currentIndex !== 0) {
+      this.currentIndex = 0;
+      this.updatePageInfo();
+      this.updateImageInfo();
+      this.preloadCurrentImage();
+      if (this.isFitMode) {
+        this.fitToScreen();
+      } else {
+        this.resetView();
+      }
+      this.animateFadeIn(() => this.renderMainImage());
+    }
+  }
+
+  public last() {
+    if (this.currentIndex !== this.imageList.length - 1) {
+      this.currentIndex = this.imageList.length - 1;
+      this.updatePageInfo();
+      this.updateImageInfo();
+      this.preloadCurrentImage();
+      if (this.isFitMode) {
+        this.fitToScreen();
+      } else {
+        this.resetView();
+      }
+      this.animateFadeIn(() => this.renderMainImage());
     }
   }
 
@@ -1088,10 +1391,10 @@ export class ImageViewer {
     if (this.fitBtn) {
       if (this.isFitMode) {
         this.fitBtn.innerHTML = Icons.AspectRatio;
-        this.fitBtn.title = "实际大小";
+        this.fitBtn.title = this.translate("actualSize");
       } else {
         this.fitBtn.innerHTML = Icons.FitToScreen;
-        this.fitBtn.title = "适应屏幕";
+        this.fitBtn.title = this.translate("fitToScreen");
       }
     }
   }
@@ -1203,10 +1506,10 @@ export class ImageViewer {
     if (this.fullscreenBtn) {
       if (this.isFullscreen) {
         this.fullscreenBtn.innerHTML = Icons.FullscreenExit;
-        this.fullscreenBtn.title = "退出全屏";
+        this.fullscreenBtn.title = this.translate("exitFullscreen");
       } else {
         this.fullscreenBtn.innerHTML = Icons.Fullscreen;
-        this.fullscreenBtn.title = "切换全屏";
+        this.fullscreenBtn.title = this.translate("toggleFullscreen");
       }
     }
   }

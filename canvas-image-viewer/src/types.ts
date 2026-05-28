@@ -1,3 +1,5 @@
+import { Language, LanguageOptions } from "./language";
+
 export interface ImageViewerOptions {
   container: HTMLElement;
   imageList: string[];
@@ -9,10 +11,13 @@ export interface ImageViewerOptions {
   onDelete?: (index: number) => void;
   
   colors?: ViewerColors;
+  language?: Language;
+  customLanguage?: LanguageOptions;
 }
 
 export interface ViewerColors {
   containerBg?: string;
+  navigatorBg?: string;
   toolbarBg?: string;
   toolbarIcon?: string;
   thumbnailBg?: string;

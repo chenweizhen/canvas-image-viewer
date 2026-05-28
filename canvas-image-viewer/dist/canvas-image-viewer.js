@@ -20,9 +20,52 @@ var e = {
 	Delete: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z\"></path></svg>",
 	OverviewOn: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M21 3C21.5523 3 22 3.44772 22 4V11H20V5H4V19H10V21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H21ZM21 13C21.5523 13 22 13.4477 22 14V20C22 20.5523 21.5523 21 21 21H13C12.4477 21 12 20.5523 12 20V14C12 13.4477 12.4477 13 13 13H21ZM20 15H14V19H20V15Z\"></path></svg>",
 	OverviewOff: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M21 3C21.5523 3 22 3.44772 22 4V11H20V5H4V19H10V21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H21ZM21 13C21.5523 13 22 13.4477 22 14V20C22 20.5523 21.5523 21 21 21H13C12.4477 21 12 20.5523 12 20V14C12 13.4477 12.4477 13 13 13H21Z\"></path></svg>"
-}, t = class {
+}, t = {
+	"zh-CN": {
+		fitToScreen: "适应屏幕",
+		actualSize: "实际大小",
+		rotateLeft: "左旋90°",
+		rotateRight: "右旋90°",
+		flipHorizontal: "水平翻转",
+		flipVertical: "垂直翻转",
+		reset: "重置视图",
+		zoomIn: "放大",
+		zoomOut: "缩小",
+		toggleThumbnails: "显示/隐藏缩略图",
+		toggleFullscreen: "切换全屏",
+		exitFullscreen: "退出全屏",
+		delete: "删除",
+		prev: "上一张",
+		next: "下一张",
+		overview: "鸟瞰图",
+		close: "关闭",
+		loading: "加载中...",
+		pixels: "像素"
+	},
+	"en-US": {
+		fitToScreen: "Fit to Screen",
+		actualSize: "Actual Size",
+		rotateLeft: "Rotate Left",
+		rotateRight: "Rotate Right",
+		flipHorizontal: "Flip Horizontal",
+		flipVertical: "Flip Vertical",
+		reset: "Reset View",
+		zoomIn: "Zoom In",
+		zoomOut: "Zoom Out",
+		toggleThumbnails: "Toggle Thumbnails",
+		toggleFullscreen: "Toggle Fullscreen",
+		exitFullscreen: "Exit Fullscreen",
+		delete: "Delete",
+		prev: "Previous",
+		next: "Next",
+		overview: "Overview",
+		close: "Close",
+		loading: "Loading...",
+		pixels: "px"
+	}
+}, n = class {
 	constructor(e) {
-		this.showThumbnails = !0, this.showOverview = !0, this.isFitMode = !0, this.isFullscreen = !1, this.isDraggingOverview = !1, this.isDraggingOverviewWindow = !1, this.overviewDragStartX = 0, this.overviewDragStartY = 0, this.overviewStartLeft = 0, this.overviewStartTop = 0, this.loadingImages = /* @__PURE__ */ new Set(), this.isFirstImageLoaded = !1, this.loadingAnimationId = null, this.currentIndex = 0, this.imageList = [], this.imageState = {
+		this.showThumbnails = !0, this.showOverview = !0, this.isFitMode = !0, this.isFullscreen = !1, this.isDraggingOverview = !1, this.isDraggingOverviewWindow = !1, this.overviewDragStartX = 0, this.overviewDragStartY = 0, this.overviewStartLeft = 0, this.overviewStartTop = 0, this.loadingImages = /* @__PURE__ */ new Set(), this.isFirstImageLoaded = !1, this.loadingAnimationId = null, this.fadeAnimationId = null, this.currentFadeAlpha = 1, this.isAnimating = !1, this.currentIndex = 0, this.imageList = [], this.imageState = {
 			scale: 1,
 			x: 0,
 			y: 0,
@@ -36,9 +79,12 @@ var e = {
 			toolbarHeight: 40,
 			roundRadius: 4,
 			onDelete: () => {},
-			colors: {}
+			colors: {},
+			language: "zh-CN",
+			customLanguage: {}
 		}, e), this.options.colors = Object.assign({
 			containerBg: "#1a1a1a",
+			navigatorBg: "rgba(0, 0, 0, 0.5)",
 			toolbarBg: "#2a2a2a",
 			toolbarIcon: "#cccccc",
 			thumbnailBg: "#2a2a2a",
@@ -51,17 +97,23 @@ var e = {
 			textColor: "#888888",
 			scaleInputBg: "#3a3a3a",
 			scaleInputText: "#ffffff"
-		}, this.options.colors), this.container = e.container, this.initCanvas(), this.loadImages(), this.bindEvents();
+		}, this.options.colors), this.currentLanguage = Object.assign({}, t[this.options.language || "zh-CN"], this.options.customLanguage || {}), this.translate = (e) => this.currentLanguage[e] || t["zh-CN"][e] || e, this.container = e.container, this.initCanvas(), this.loadImages(), this.bindEvents();
 	}
 	initCanvas() {
 		let t = this.options.colors;
-		this.container.style.position = "relative", this.container.style.background = t.containerBg || "#1a1a1a", this.container.style.userSelect = "none", this.container.style.overflow = "hidden", this.mainCanvas = document.createElement("canvas"), this.mainCanvas.width = this.options.width, this.mainCanvas.height = this.options.height - this.options.thumbnailHeight - this.options.toolbarHeight, this.mainCanvas.style.cursor = "grab", this.mainCanvas.style.display = "block", this.mainCtx = this.mainCanvas.getContext("2d"), this.thumbScrollContainer = document.createElement("div"), this.thumbScrollContainer.classList.add("thumb-scroll-container"), this.thumbScrollContainer.style.position = "relative", this.thumbScrollContainer.style.width = "100%", this.thumbScrollContainer.style.height = this.options.thumbnailHeight + "px", this.thumbScrollContainer.style.overflowX = "hidden", this.thumbScrollContainer.style.overflowY = "hidden", this.thumbScrollContainer.style.background = t.thumbnailBg || "#3a3a3a", this.thumbScrollContainer.addEventListener("mouseenter", () => {
+		this.container.style.position = "relative", this.container.style.background = t.containerBg || "#1a1a1a", this.container.style.userSelect = "none", this.container.style.overflow = "hidden", this.mainCanvas = document.createElement("canvas"), this.mainCanvas.width = this.options.width, this.mainCanvas.height = this.options.height - this.options.thumbnailHeight - this.options.toolbarHeight, this.mainCanvas.style.cursor = "grab", this.mainCanvas.style.display = "block", this.mainCtx = this.mainCanvas.getContext("2d"), this.createNavigationArrows(), this.thumbScrollContainer = document.createElement("div"), this.thumbScrollContainer.classList.add("thumb-scroll-container"), this.thumbScrollContainer.style.position = "relative", this.thumbScrollContainer.style.width = "100%", this.thumbScrollContainer.style.height = this.options.thumbnailHeight + "px", this.thumbScrollContainer.style.overflowX = "hidden", this.thumbScrollContainer.style.overflowY = "hidden", this.thumbScrollContainer.style.background = t.thumbnailBg || "#3a3a3a", this.thumbScrollContainer.addEventListener("mouseenter", () => {
 			this.thumbScrollContainer.style.overflowX = "auto";
 		}), this.thumbScrollContainer.addEventListener("mouseleave", () => {
 			this.thumbScrollContainer.style.overflowX = "hidden";
 		});
-		let n = document.createElement("style");
-		n.textContent = `
+		let n = null;
+		this.thumbScrollContainer.addEventListener("scroll", () => {
+			n ||= requestAnimationFrame(() => {
+				this.renderThumbnails(), n = null;
+			});
+		});
+		let r = document.createElement("style");
+		r.textContent = `
       .thumb-scroll-container::-webkit-scrollbar {
         height: ${this.SCROLLBAR_HEIGHT}px;
         width: ${this.SCROLLBAR_HEIGHT}px;
@@ -77,29 +129,29 @@ var e = {
       .thumb-scroll-container::-webkit-scrollbar-thumb:hover {
         background: ${t.toolbarIcon || "#6a6a6a"};
       }
-    `, document.head.appendChild(n), this.thumbCanvas = document.createElement("canvas"), this.thumbCanvas.height = this.options.thumbnailHeight, this.thumbCanvas.style.cursor = "pointer", this.thumbCanvas.style.display = "block", this.thumbCanvas.style.paddingBottom = this.SCROLLBAR_HEIGHT + "px", this.thumbCtx = this.thumbCanvas.getContext("2d"), this.thumbScrollContainer.appendChild(this.thumbCanvas), this.toolbarContainer = document.createElement("div"), this.toolbarContainer.style.height = this.options.toolbarHeight + "px", this.toolbarContainer.style.background = t.toolbarBg || "#2a2a2a", this.toolbarContainer.style.display = "flex", this.toolbarContainer.style.alignItems = "center", this.toolbarContainer.style.justifyContent = "space-between", this.toolbarContainer.style.padding = "0 16px", this.toolbarContainer.style.borderTop = "1px solid " + t.thumbnailBorder, this.infoDisplay = document.createElement("div"), this.infoDisplay.style.color = t.textColor || "#ffffff", this.infoDisplay.style.fontSize = "12px", this.infoDisplay.style.flex = "1";
-		let r = document.createElement("div");
-		r.style.display = "flex", r.style.alignItems = "center", r.style.gap = "8px", r.appendChild(this.infoDisplay);
+    `, document.head.appendChild(r), this.thumbCanvas = document.createElement("canvas"), this.thumbCanvas.height = this.options.thumbnailHeight, this.thumbCanvas.style.cursor = "pointer", this.thumbCanvas.style.display = "block", this.thumbCanvas.style.paddingBottom = this.SCROLLBAR_HEIGHT + "px", this.thumbCtx = this.thumbCanvas.getContext("2d"), this.thumbScrollContainer.appendChild(this.thumbCanvas), this.toolbarContainer = document.createElement("div"), this.toolbarContainer.style.height = this.options.toolbarHeight + "px", this.toolbarContainer.style.background = t.toolbarBg || "#2a2a2a", this.toolbarContainer.style.display = "flex", this.toolbarContainer.style.alignItems = "center", this.toolbarContainer.style.justifyContent = "space-between", this.toolbarContainer.style.padding = "0 16px", this.toolbarContainer.style.borderTop = "1px solid " + t.thumbnailBorder, this.infoDisplay = document.createElement("div"), this.infoDisplay.style.color = t.textColor || "#ffffff", this.infoDisplay.style.fontSize = "12px", this.infoDisplay.style.flex = "1";
 		let i = document.createElement("div");
-		i.style.display = "flex", i.style.alignItems = "center", i.style.gap = "8px";
-		let a = this.createToolbarButton("ArrowLeft", () => this.prev());
-		i.appendChild(a);
-		let o = document.createElement("span");
-		o.style.color = t.toolbarIcon || "#cccccc", o.style.fontSize = "12px", o.style.minWidth = "60px", o.style.textAlign = "center", o.id = "page-info", o.textContent = "1/0", i.appendChild(o);
-		let s = this.createToolbarButton("ArrowRight", () => this.next());
-		i.appendChild(s), this.fitBtn = this.createToolbarButton("FitToScreen", () => this.toggleFitMode()), this.fitBtn.title = "适应屏幕", i.appendChild(this.fitBtn);
-		let c = document.createElement("div");
-		c.style.position = "relative", c.style.background = t.scaleInputBg || "#3a3a3a", c.style.border = "none", c.style.padding = "0", c.style.fontSize = "12px", c.style.borderRadius = this.options.roundRadius + "px", c.style.width = "64px";
-		let l = document.createElement("input");
-		l.type = "text", l.style.background = "transparent", l.style.color = t.scaleInputText || "#ffffff", l.style.border = "none", l.style.padding = "4px 22px 4px 4px", l.style.fontSize = "12px", l.style.width = "72px", l.style.textAlign = "center", l.style.cursor = "text", l.style.outline = "none", l.value = "100%";
-		let u = document.createElement("button");
-		u.innerHTML = e.ArrowDropDown, u.style.position = "absolute", u.style.right = "2px", u.style.top = "50%", u.style.transform = "translateY(-50%)", u.style.background = "transparent", u.style.border = "none", u.style.color = t.toolbarIcon || "#cccccc", u.style.fontSize = "10px", u.style.width = "18px", u.style.height = "18px", u.style.cursor = "pointer", u.style.display = "flex", u.style.alignItems = "center", u.style.justifyContent = "center", u.title = "缩放选项", u.addEventListener("mouseenter", () => {
-			u.style.color = t.scaleInputText || "#ffffff";
-		}), u.addEventListener("mouseleave", () => {
-			u.style.color = t.toolbarIcon || "#cccccc";
-		}), c.appendChild(l), c.appendChild(u);
-		let d = document.createElement("div");
-		d.style.position = "absolute", d.style.bottom = "100%", d.style.left = "-8px", d.style.background = t.thumbnailBg || "#3a3a3a", d.style.border = "1px solid " + t.thumbnailBorder, d.style.width = "80px", d.style.display = "none", d.style.zIndex = "100", d.style.borderRadius = this.options.roundRadius + "px", d.style.marginBottom = "4px", d.style.textAlign = "center", [
+		i.style.display = "flex", i.style.alignItems = "center", i.style.gap = "8px", i.appendChild(this.infoDisplay);
+		let a = document.createElement("div");
+		a.style.display = "flex", a.style.alignItems = "center", a.style.gap = "8px";
+		let o = this.createToolbarButton("ArrowLeft", () => this.prev());
+		a.appendChild(o);
+		let s = document.createElement("span");
+		s.style.color = t.toolbarIcon || "#cccccc", s.style.fontSize = "12px", s.style.minWidth = "60px", s.style.textAlign = "center", s.id = "page-info", s.textContent = "1/0", a.appendChild(s);
+		let c = this.createToolbarButton("ArrowRight", () => this.next());
+		a.appendChild(c), this.fitBtn = this.createToolbarButton("FitToScreen", () => this.toggleFitMode()), this.fitBtn.title = this.translate("fitToScreen"), a.appendChild(this.fitBtn);
+		let l = document.createElement("div");
+		l.style.position = "relative", l.style.background = t.scaleInputBg || "#3a3a3a", l.style.border = "none", l.style.padding = "0", l.style.fontSize = "12px", l.style.borderRadius = this.options.roundRadius + "px", l.style.width = "64px";
+		let u = document.createElement("input");
+		u.type = "text", u.style.background = "transparent", u.style.color = t.scaleInputText || "#ffffff", u.style.border = "none", u.style.padding = "4px 22px 4px 4px", u.style.fontSize = "12px", u.style.width = "72px", u.style.textAlign = "center", u.style.cursor = "text", u.style.outline = "none", u.value = "100%";
+		let d = document.createElement("button");
+		d.innerHTML = e.ArrowDropDown, d.style.position = "absolute", d.style.right = "2px", d.style.top = "50%", d.style.transform = "translateY(-50%)", d.style.background = "transparent", d.style.border = "none", d.style.color = t.toolbarIcon || "#cccccc", d.style.fontSize = "10px", d.style.width = "18px", d.style.height = "18px", d.style.cursor = "pointer", d.style.display = "flex", d.style.alignItems = "center", d.style.justifyContent = "center", d.title = this.translate("zoomIn"), d.addEventListener("mouseenter", () => {
+			d.style.color = t.scaleInputText || "#ffffff";
+		}), d.addEventListener("mouseleave", () => {
+			d.style.color = t.toolbarIcon || "#cccccc";
+		}), l.appendChild(u), l.appendChild(d);
+		let f = document.createElement("div");
+		f.style.position = "absolute", f.style.bottom = "100%", f.style.left = "-8px", f.style.background = t.thumbnailBg || "#3a3a3a", f.style.border = "1px solid " + t.thumbnailBorder, f.style.width = "80px", f.style.display = "none", f.style.zIndex = "100", f.style.borderRadius = this.options.roundRadius + "px", f.style.marginBottom = "4px", f.style.textAlign = "center", [
 			"25",
 			"50",
 			"75",
@@ -116,48 +168,48 @@ var e = {
 				n.style.background = "transparent", n.style.color = t.toolbarIcon || "#cccccc";
 			}), n.addEventListener("click", () => {
 				let t = parseFloat(e) / 100;
-				this.imageState.scale = Math.max(.1, Math.min(10, t)), l.value = `${Math.round(this.imageState.scale * 100)}%`, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage(), d.style.display = "none";
-			}), d.appendChild(n);
-		}), c.appendChild(d), u.addEventListener("click", (e) => {
-			e.stopPropagation(), d.style.display = d.style.display === "none" ? "block" : "none";
+				this.imageState.scale = Math.max(.1, Math.min(10, t)), u.value = `${Math.round(this.imageState.scale * 100)}%`, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage(), f.style.display = "none";
+			}), f.appendChild(n);
+		}), l.appendChild(f), d.addEventListener("click", (e) => {
+			e.stopPropagation(), f.style.display = f.style.display === "none" ? "block" : "none";
 		}), document.addEventListener("click", () => {
-			d.style.display = "none";
-		}), l.addEventListener("keydown", (e) => {
+			f.style.display = "none";
+		}), u.addEventListener("keydown", (e) => {
 			if (e.key === "Enter") {
-				let e = l.value.replace("%", "").trim(), t = parseFloat(e);
-				if (isNaN(t)) l.value = `${Math.round(this.imageState.scale * 100)}%`;
+				let e = u.value.replace("%", "").trim(), t = parseFloat(e);
+				if (isNaN(t)) u.value = `${Math.round(this.imageState.scale * 100)}%`;
 				else {
 					let e = Math.round(Math.max(10, Math.min(1e3, t)));
-					this.imageState.scale = e / 100, l.value = `${e}%`, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage();
+					this.imageState.scale = e / 100, u.value = `${e}%`, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage();
 				}
 			}
-		}), l.addEventListener("blur", () => {
-			let e = l.value.replace("%", "").trim(), t = parseFloat(e);
-			if (isNaN(t)) l.value = `${Math.round(this.imageState.scale * 100)}%`;
+		}), u.addEventListener("blur", () => {
+			let e = u.value.replace("%", "").trim(), t = parseFloat(e);
+			if (isNaN(t)) u.value = `${Math.round(this.imageState.scale * 100)}%`;
 			else {
 				let e = Math.round(Math.max(10, Math.min(1e3, t)));
-				this.imageState.scale = e / 100, l.value = `${e}%`, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage();
+				this.imageState.scale = e / 100, u.value = `${e}%`, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage();
 			}
-		}), this.scaleDisplay = l, i.appendChild(c);
-		let f = this.createToolbarButton("ZoomIn", () => this.zoom(1.1));
-		f.title = "放大", i.appendChild(f);
-		let p = this.createToolbarButton("ZoomOut", () => this.zoom(.9));
-		p.title = "缩小", i.appendChild(p);
-		let m = this.createToolbarButton("RotateLeft", () => this.rotate(-90));
-		m.title = "向左旋转", i.appendChild(m);
-		let h = this.createToolbarButton("RotateRight", () => this.rotate(90));
-		h.title = "向右旋转", i.appendChild(h);
-		let g = this.createToolbarButton("FlipHorizontal", () => this.flipHorizontal());
-		g.title = "水平翻转", i.appendChild(g);
-		let _ = this.createToolbarButton("FlipVertical", () => this.flipVertical());
-		_.title = "垂直翻转", i.appendChild(_);
-		let v = this.createToolbarButton("Delete", () => this.handleDelete());
-		v.title = "删除", i.appendChild(v);
-		let y = document.createElement("div");
-		y.style.display = "flex", y.style.alignItems = "center", y.style.gap = "8px";
-		let b = this.createToolbarButton("Slideshow", () => this.toggleThumbnails());
-		b.title = "切换缩略图显示", y.appendChild(b), this.overviewBtn = this.createToolbarButton("OverviewOff", () => this.toggleOverview()), this.overviewBtn.title = "切换鸟瞰图显示", y.appendChild(this.overviewBtn), this.fullscreenBtn = this.createToolbarButton("Fullscreen", () => this.toggleFullscreen()), this.fullscreenBtn.title = "切换全屏", y.appendChild(this.fullscreenBtn), this.toolbarContainer.appendChild(r), this.toolbarContainer.appendChild(i), this.toolbarContainer.appendChild(y), this.overviewContainer = document.createElement("div"), this.overviewContainer.style.position = "absolute", this.overviewContainer.style.bottom = this.options.toolbarHeight + this.options.thumbnailHeight + 10 + "px", this.overviewContainer.style.right = "10px", this.overviewContainer.style.background = t.overviewBg || "#2a2a2a", this.overviewContainer.style.border = "1px solid " + t.overviewBorder, this.overviewContainer.style.borderRadius = this.options.roundRadius + "px", this.overviewContainer.style.padding = "4px 8px", this.overviewContainer.style.cursor = "move", this.overviewContainer.style.userSelect = "none", this.overviewContainer.addEventListener("mousedown", (e) => {
-			if (e.target === C) return;
+		}), this.scaleDisplay = u, a.appendChild(l);
+		let p = this.createToolbarButton("ZoomIn", () => this.zoom(1.1));
+		p.title = this.translate("zoomIn"), a.appendChild(p);
+		let m = this.createToolbarButton("ZoomOut", () => this.zoom(.9));
+		m.title = this.translate("zoomOut"), a.appendChild(m);
+		let h = this.createToolbarButton("RotateLeft", () => this.rotate(-90));
+		h.title = this.translate("rotateLeft"), a.appendChild(h);
+		let g = this.createToolbarButton("RotateRight", () => this.rotate(90));
+		g.title = this.translate("rotateRight"), a.appendChild(g);
+		let _ = this.createToolbarButton("FlipHorizontal", () => this.flipHorizontal());
+		_.title = this.translate("flipHorizontal"), a.appendChild(_);
+		let v = this.createToolbarButton("FlipVertical", () => this.flipVertical());
+		v.title = this.translate("flipVertical"), a.appendChild(v);
+		let y = this.createToolbarButton("Delete", () => this.handleDelete());
+		y.title = this.translate("delete"), a.appendChild(y);
+		let b = document.createElement("div");
+		b.style.display = "flex", b.style.alignItems = "center", b.style.gap = "8px";
+		let x = this.createToolbarButton("Slideshow", () => this.toggleThumbnails());
+		x.title = this.translate("toggleThumbnails"), b.appendChild(x), this.overviewBtn = this.createToolbarButton("OverviewOff", () => this.toggleOverview()), this.overviewBtn.title = this.translate("overview"), b.appendChild(this.overviewBtn), this.fullscreenBtn = this.createToolbarButton("Fullscreen", () => this.toggleFullscreen()), this.fullscreenBtn.title = this.translate("toggleFullscreen"), b.appendChild(this.fullscreenBtn), this.toolbarContainer.appendChild(i), this.toolbarContainer.appendChild(a), this.toolbarContainer.appendChild(b), this.overviewContainer = document.createElement("div"), this.overviewContainer.style.position = "absolute", this.overviewContainer.style.bottom = this.options.toolbarHeight + this.options.thumbnailHeight + 10 + "px", this.overviewContainer.style.right = "10px", this.overviewContainer.style.background = t.overviewBg || "#2a2a2a", this.overviewContainer.style.border = "1px solid " + t.overviewBorder, this.overviewContainer.style.borderRadius = this.options.roundRadius + "px", this.overviewContainer.style.padding = "4px 8px", this.overviewContainer.style.cursor = "move", this.overviewContainer.style.userSelect = "none", this.overviewContainer.addEventListener("mousedown", (e) => {
+			if (e.target === w) return;
 			this.isDraggingOverviewWindow = !0, this.overviewDragStartX = e.clientX, this.overviewDragStartY = e.clientY;
 			let t = this.overviewContainer.getBoundingClientRect(), n = this.container.getBoundingClientRect();
 			this.overviewStartLeft = t.left - n.left, this.overviewStartTop = t.top - n.top;
@@ -168,18 +220,18 @@ var e = {
 		}), window.addEventListener("mouseup", () => {
 			this.isDraggingOverviewWindow = !1;
 		});
-		let x = document.createElement("div");
-		x.style.display = "flex", x.style.justifyContent = "space-between", x.style.alignItems = "center", x.style.padding = "2px 0px", x.style.marginBottom = "4px";
-		let S = document.createElement("span");
-		S.style.color = t.textColor || "#ffffff", S.style.fontSize = "12px", S.textContent = "鸟瞰图", x.appendChild(S);
-		let C = document.createElement("button");
-		C.innerHTML = e.Close, C.style.background = "transparent", C.style.border = "none", C.style.color = t.textColor || "#ffffff", C.style.fontSize = "12px", C.style.width = "16px", C.style.height = "16px", C.style.cursor = "pointer", C.title = "关闭鸟瞰图", C.addEventListener("mouseenter", () => {
-			C.style.color = t.scaleInputText || "#ffffff";
-		}), C.addEventListener("mouseleave", () => {
-			C.style.color = t.textColor || "#ffffff";
-		}), C.addEventListener("click", (e) => {
+		let S = document.createElement("div");
+		S.style.display = "flex", S.style.justifyContent = "space-between", S.style.alignItems = "center", S.style.padding = "2px 0px", S.style.marginBottom = "4px";
+		let C = document.createElement("span");
+		C.style.color = t.textColor || "#ffffff", C.style.fontSize = "12px", C.textContent = this.translate("overview"), S.appendChild(C);
+		let w = document.createElement("button");
+		w.innerHTML = e.Close, w.style.background = "transparent", w.style.border = "none", w.style.color = t.textColor || "#ffffff", w.style.fontSize = "12px", w.style.width = "16px", w.style.height = "16px", w.style.cursor = "pointer", w.title = this.translate("close"), w.addEventListener("mouseenter", () => {
+			w.style.color = t.scaleInputText || "#ffffff";
+		}), w.addEventListener("mouseleave", () => {
+			w.style.color = t.textColor || "#ffffff";
+		}), w.addEventListener("click", (e) => {
 			e.stopPropagation(), this.toggleOverview();
-		}), x.appendChild(C), this.overviewContainer.appendChild(x), this.overviewCanvas = document.createElement("canvas"), this.overviewCanvas.width = this.OVERVIEW_SIZE, this.overviewCanvas.height = this.OVERVIEW_SIZE, this.overviewCanvas.style.cursor = "move", this.overviewCanvas.style.background = t.containerBg || "#1a1a1a", this.overviewCtx = this.overviewCanvas.getContext("2d"), this.overviewContainer.appendChild(this.overviewCanvas), this.container.appendChild(this.mainCanvas), this.container.appendChild(this.thumbScrollContainer), this.container.appendChild(this.toolbarContainer), this.container.appendChild(this.overviewContainer);
+		}), S.appendChild(w), this.overviewContainer.appendChild(S), this.overviewCanvas = document.createElement("canvas"), this.overviewCanvas.width = this.OVERVIEW_SIZE, this.overviewCanvas.height = this.OVERVIEW_SIZE, this.overviewCanvas.style.cursor = "move", this.overviewCanvas.style.background = t.containerBg || "#1a1a1a", this.overviewCtx = this.overviewCanvas.getContext("2d"), this.overviewContainer.appendChild(this.overviewCanvas), this.container.appendChild(this.mainCanvas), this.container.appendChild(this.thumbScrollContainer), this.container.appendChild(this.toolbarContainer), this.container.appendChild(this.overviewContainer);
 	}
 	createToolbarButton(t, n) {
 		let r = this.options.colors, i = document.createElement("button");
@@ -200,6 +252,19 @@ var e = {
 			};
 		}), this.renderLoading();
 	}
+	preloadCurrentImage() {
+		if (this.options.imageList[this.currentIndex], this.imageList[this.currentIndex]) {
+			let e = (this.currentIndex + 1) % this.options.imageList.length, t = this.options.imageList[e];
+			if (!this.imageList[e]) {
+				let n = new Image();
+				n.crossOrigin = "anonymous", n.src = t, n.onload = () => {
+					this.imageList[e] = n, this.loadingImages.delete(e), this.renderThumbnails();
+				}, n.onerror = () => {
+					this.loadingImages.delete(e);
+				};
+			}
+		}
+	}
 	renderLoading() {
 		let e = this.mainCtx, t = this.mainCanvas;
 		e.clearRect(0, 0, t.width, t.height), e.fillStyle = "#2a2a2a", e.fillRect(0, 0, t.width, t.height);
@@ -209,20 +274,27 @@ var e = {
 	renderAll() {
 		this.renderMainImage(), this.renderThumbnails();
 	}
+	animateFadeIn(e) {
+		this.currentFadeAlpha = 0, this.isAnimating = !0;
+		let t = () => {
+			this.currentFadeAlpha += .08, this.currentFadeAlpha >= 1 && (this.currentFadeAlpha = 1, this.isAnimating = !1, this.fadeAnimationId &&= (cancelAnimationFrame(this.fadeAnimationId), null)), e(), this.isAnimating && (this.fadeAnimationId = requestAnimationFrame(t));
+		};
+		this.fadeAnimationId = requestAnimationFrame(t);
+	}
 	renderMainImage() {
 		let e = this.mainCtx, t = this.mainCanvas, n = this.imageList[this.currentIndex];
 		if (!n) return;
 		let r = this.imageState;
-		e.clearRect(0, 0, t.width, t.height), e.save(), e.translate(t.width / 2, t.height / 2), e.rotate(r.rotation * Math.PI / 180), r.flipH && e.scale(-1, 1), r.flipV && e.scale(1, -1);
+		e.clearRect(0, 0, t.width, t.height), e.save(), e.globalAlpha = this.currentFadeAlpha, e.translate(t.width / 2, t.height / 2), e.rotate(r.rotation * Math.PI / 180), r.flipH && e.scale(-1, 1), r.flipV && e.scale(1, -1);
 		let i = n.width * r.scale, a = n.height * r.scale;
 		e.drawImage(n, -i / 2 + r.x, -a / 2 + r.y, i, a), e.restore(), this.updateScaleDisplay(), this.renderOverview();
 	}
 	renderThumbnails() {
 		let e = this.thumbCtx, t = this.thumbCanvas, n = this.options.imageList.length * (this.TW + 15) + 20;
 		t.width = Math.max(n, this.options.width);
-		let r = this.options.colors;
-		e.clearRect(0, 0, t.width, t.height), e.fillStyle = r.thumbnailBg || "#2a2a2a", e.fillRect(0, 0, t.width, t.height);
-		for (let n = 0; n < this.options.imageList.length; n++) {
+		let r = this.options.colors, i = this.thumbScrollContainer.scrollLeft, a = this.thumbScrollContainer.clientWidth, o = Math.max(0, Math.floor((i - 10) / (this.TW + 15)) - 3), s = Math.min(this.options.imageList.length, Math.ceil((i + a + 10) / (this.TW + 15)) + 3);
+		o * (this.TW + 15), s * (this.TW + 15) + this.TW, e.clearRect(0, 0, t.width, t.height), e.fillStyle = r.thumbnailBg || "#2a2a2a", e.fillRect(0, 0, t.width, t.height);
+		for (let n = o; n < s; n++) {
 			let i = this.imageList[n], a = n * (this.TW + 15) + 10, o = (t.height - this.TH) / 2;
 			if (n === this.currentIndex && (e.fillStyle = r.thumbnailActive || "#0099ff", this.fillRoundRect(e, a - 3, o - 3, this.TW + 6, this.TH + 6, this.options.roundRadius)), e.fillStyle = r.thumbnailBorder || "#3a3a3a", this.fillRoundRect(e, a - 2, o - 2, this.TW + 4, this.TH + 4, this.options.roundRadius), i) {
 				let t = i.width / i.height, n = this.TW / this.TH, r = this.TW, s = this.TH, c = a, l = o;
@@ -230,25 +302,51 @@ var e = {
 			} else e.fillStyle = "#4a4a4a", this.fillRoundRect(e, a, o, this.TW, this.TH, this.options.roundRadius), e.save(), e.translate(a + this.TW / 2, o + this.TH / 2), e.rotate(Date.now() / 20 * Math.PI / 180), e.strokeStyle = "#0099ff", e.lineWidth = 2, e.beginPath(), e.arc(0, 0, 6, -Math.PI / 2, Math.PI * 1.5), e.stroke(), e.restore();
 		}
 	}
+	createNavigationArrows() {
+		let t = this.options.colors;
+		this.mainCanvas.height, this.leftArrow = document.createElement("button"), this.leftArrow.innerHTML = e.ArrowLeft, this.leftArrow.style.position = "absolute", this.leftArrow.style.left = "10px", this.leftArrow.style.top = "50%", this.leftArrow.style.transform = "translateY(-50%)", this.leftArrow.style.width = "40px", this.leftArrow.style.height = "40px", this.leftArrow.style.background = t.navigatorBg || "rgba(0, 0, 0, 0.5)", this.leftArrow.style.border = "none", this.leftArrow.style.borderRadius = "50%", this.leftArrow.style.color = t.toolbarIcon || "#cccccc", this.leftArrow.style.display = "flex", this.leftArrow.style.alignItems = "center", this.leftArrow.style.justifyContent = "center", this.leftArrow.style.opacity = "0", this.leftArrow.style.transition = "opacity 0.3s ease", this.leftArrow.style.cursor = "pointer", this.leftArrow.style.zIndex = "10", this.leftArrow.style.padding = "12px", this.leftArrow.title = this.translate("prev"), this.leftArrow.addEventListener("click", () => this.prev()), this.leftArrow.addEventListener("mouseenter", () => {
+			this.leftArrow.style.opacity = "1";
+		}), this.leftArrow.addEventListener("mouseleave", (e) => {
+			let t = this.mainCanvas.getBoundingClientRect(), n = e.clientX - t.left || -1;
+			(n < 0 || n > t.width) && (this.leftArrow.style.opacity = "0");
+		}), this.container.appendChild(this.leftArrow), this.rightArrow = document.createElement("button"), this.rightArrow.innerHTML = e.ArrowRight, this.rightArrow.style.position = "absolute", this.rightArrow.style.right = "10px", this.rightArrow.style.top = "50%", this.rightArrow.style.transform = "translateY(-50%)", this.rightArrow.style.width = "40px", this.rightArrow.style.height = "40px", this.rightArrow.style.background = t.navigatorBg || "rgba(0, 0, 0, 0.5)", this.rightArrow.style.border = "none", this.rightArrow.style.borderRadius = "50%", this.rightArrow.style.color = t.toolbarIcon || "#cccccc", this.rightArrow.style.display = "flex", this.rightArrow.style.alignItems = "center", this.rightArrow.style.justifyContent = "center", this.rightArrow.style.opacity = "0", this.rightArrow.style.transition = "opacity 0.3s ease", this.rightArrow.style.cursor = "pointer", this.rightArrow.style.zIndex = "10", this.rightArrow.style.padding = "12px", this.rightArrow.title = this.translate("next"), this.rightArrow.addEventListener("click", () => this.next()), this.rightArrow.addEventListener("mouseenter", () => {
+			this.rightArrow.style.opacity = "1";
+		}), this.rightArrow.addEventListener("mouseleave", (e) => {
+			let t = this.mainCanvas.getBoundingClientRect(), n = e.clientX - t.left || -1;
+			(n < 0 || n > t.width) && (this.rightArrow.style.opacity = "0");
+		}), this.container.appendChild(this.rightArrow), this.mainCanvas.addEventListener("mousemove", (e) => {
+			let t = this.mainCanvas.getBoundingClientRect(), n = e.clientX - t.left;
+			n < 80 ? this.leftArrow.style.opacity = "1" : this.leftArrow.style.opacity = "0", n > t.width - 80 ? this.rightArrow.style.opacity = "1" : this.rightArrow.style.opacity = "0";
+		}), this.mainCanvas.addEventListener("mouseleave", () => {
+			this.leftArrow.style.opacity = "0", this.rightArrow.style.opacity = "0";
+		});
+	}
 	bindEvents() {
 		this.thumbCanvas.addEventListener("click", (e) => {
 			let t = this.thumbCanvas.getBoundingClientRect(), n = e.clientX - t.left + this.thumbScrollContainer.scrollLeft, r = Math.floor((n - 10) / (this.TW + 15));
 			r >= 0 && r < this.imageList.length && (this.currentIndex = r, this.updatePageInfo(), this.updateImageInfo(), this.isFitMode ? this.fitToScreen() : this.resetView());
-		}), this.mainCanvas.addEventListener("mousedown", (e) => {
+		});
+		let e = null;
+		this.mainCanvas.addEventListener("mousedown", (e) => {
 			this.isDragging = !0, this.lastX = e.clientX, this.lastY = e.clientY, this.mainCanvas.style.cursor = "grabbing";
-		}), window.addEventListener("mousemove", (e) => {
-			if (!this.isDragging) return;
-			let t = e.clientX - this.lastX, n = e.clientY - this.lastY;
-			this.imageState.flipH && (t = -t), this.imageState.flipV && (n = -n), this.imageState.x += t, this.imageState.y += n, this.lastX = e.clientX, this.lastY = e.clientY, this.renderMainImage();
+		}), window.addEventListener("mousemove", (t) => {
+			this.isDragging && (e ||= requestAnimationFrame(() => {
+				let n = t.clientX - this.lastX, r = t.clientY - this.lastY;
+				this.imageState.flipH && (n = -n), this.imageState.flipV && (r = -r), this.imageState.x += n, this.imageState.y += r, this.lastX = t.clientX, this.lastY = t.clientY, this.renderMainImage(), e = null;
+			}));
 		}), window.addEventListener("mouseup", () => {
 			this.isDragging = !1, this.mainCanvas.style.cursor = "grab";
-		}), this.mainCanvas.addEventListener("wheel", (e) => {
-			e.preventDefault();
-			let t = e.deltaY > 0 ? .9 : 1.1, n = Math.max(.1, Math.min(10, this.imageState.scale * t));
-			if (n !== this.imageState.scale) {
-				let t = this.mainCanvas.getBoundingClientRect(), r = e.clientX - t.left, i = e.clientY - t.top, a = this.mainCanvas.width / 2, o = this.mainCanvas.height / 2, s = r - a - this.imageState.x, c = i - o - this.imageState.y, l = n / this.imageState.scale;
-				this.imageState.x = r - a - s * l, this.imageState.y = i - o - c * l, this.imageState.scale = n, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage();
-			}
+		});
+		let t = null;
+		this.mainCanvas.addEventListener("wheel", (e) => {
+			e.preventDefault(), !t && (t = requestAnimationFrame(() => {
+				let n = e.deltaY > 0 ? .9 : 1.1, r = Math.max(.1, Math.min(10, this.imageState.scale * n));
+				if (r !== this.imageState.scale) {
+					let t = this.mainCanvas.getBoundingClientRect(), n = e.clientX - t.left, i = e.clientY - t.top, a = this.mainCanvas.width / 2, o = this.mainCanvas.height / 2, s = n - a - this.imageState.x, c = i - o - this.imageState.y, l = r / this.imageState.scale;
+					this.imageState.x = n - a - s * l, this.imageState.y = i - o - c * l, this.imageState.scale = r, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage();
+				}
+				t = null;
+			}));
 		}, { passive: !1 }), this.mainCanvas.addEventListener("mouseleave", () => {
 			this.isDragging = !1, this.mainCanvas.style.cursor = "grab";
 		}), document.addEventListener("fullscreenchange", () => {
@@ -268,6 +366,38 @@ var e = {
 			this.imageState.x -= b * p, this.imageState.y -= x * p, this.lastX = e.clientX, this.lastY = e.clientY, this.renderMainImage();
 		}), window.addEventListener("mouseup", () => {
 			this.isDraggingOverview &&= !1;
+		}), window.addEventListener("keydown", (e) => {
+			if (!(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) switch (e.key) {
+				case "ArrowLeft":
+					e.preventDefault(), this.prev();
+					break;
+				case "ArrowRight":
+					e.preventDefault(), this.next();
+					break;
+				case "+":
+				case "=":
+					e.preventDefault(), this.zoomIn();
+					break;
+				case "-":
+					e.preventDefault(), this.zoomOut();
+					break;
+				case "Home":
+					e.preventDefault(), this.first();
+					break;
+				case "End":
+					e.preventDefault(), this.last();
+					break;
+				case " ":
+					e.preventDefault(), this.toggleFitMode();
+					break;
+				case "Escape":
+					e.preventDefault(), this.isFullscreen && this.toggleFullscreen();
+					break;
+				case "f":
+				case "F":
+					e.preventDefault(), this.toggleFullscreen();
+					break;
+			}
 		});
 	}
 	fillRoundRect(e, t, n, r, i, a) {
@@ -294,7 +424,7 @@ var e = {
 	updateImageInfo() {
 		let e = this.imageList[this.currentIndex];
 		if (!e) return;
-		let t = `${e.width}×${e.height}像素`;
+		let t = `${e.width}×${e.height} ${this.translate("pixels")}`;
 		this.infoDisplay.textContent = t;
 	}
 	zoom(e) {
@@ -308,10 +438,22 @@ var e = {
 		this.imageState.flipV = !this.imageState.flipV, this.renderMainImage();
 	}
 	prev() {
-		this.currentIndex = (this.currentIndex - 1 + this.imageList.length) % this.imageList.length, this.updatePageInfo(), this.updateImageInfo(), this.isFitMode ? this.fitToScreen() : this.resetView();
+		this.currentIndex = (this.currentIndex - 1 + this.imageList.length) % this.imageList.length, this.updatePageInfo(), this.updateImageInfo(), this.preloadCurrentImage(), this.isFitMode ? this.fitToScreen() : this.resetView(), this.animateFadeIn(() => this.renderMainImage());
 	}
 	next() {
-		this.currentIndex = (this.currentIndex + 1) % this.imageList.length, this.updatePageInfo(), this.updateImageInfo(), this.isFitMode ? this.fitToScreen() : this.resetView();
+		this.currentIndex = (this.currentIndex + 1) % this.imageList.length, this.updatePageInfo(), this.updateImageInfo(), this.preloadCurrentImage(), this.isFitMode ? this.fitToScreen() : this.resetView(), this.animateFadeIn(() => this.renderMainImage());
+	}
+	zoomIn() {
+		this.isFitMode = !1, this.imageState.scale = Math.min(10, this.imageState.scale * 1.2), this.updateFitButton(), this.renderMainImage();
+	}
+	zoomOut() {
+		this.isFitMode = !1, this.imageState.scale = Math.max(.1, this.imageState.scale / 1.2), this.updateFitButton(), this.renderMainImage();
+	}
+	first() {
+		this.currentIndex !== 0 && (this.currentIndex = 0, this.updatePageInfo(), this.updateImageInfo(), this.preloadCurrentImage(), this.isFitMode ? this.fitToScreen() : this.resetView(), this.animateFadeIn(() => this.renderMainImage()));
+	}
+	last() {
+		this.currentIndex !== this.imageList.length - 1 && (this.currentIndex = this.imageList.length - 1, this.updatePageInfo(), this.updateImageInfo(), this.preloadCurrentImage(), this.isFitMode ? this.fitToScreen() : this.resetView(), this.animateFadeIn(() => this.renderMainImage()));
 	}
 	rotate(e = 90) {
 		this.imageState.rotation = (this.imageState.rotation + e) % 360, this.renderMainImage();
@@ -338,7 +480,7 @@ var e = {
 		this.isFitMode ? (this.resetView(), this.isFitMode = !1) : (this.fitToScreen(), this.isFitMode = !0), this.updateFitButton();
 	}
 	updateFitButton() {
-		this.fitBtn && (this.isFitMode ? (this.fitBtn.innerHTML = e.AspectRatio, this.fitBtn.title = "实际大小") : (this.fitBtn.innerHTML = e.FitToScreen, this.fitBtn.title = "适应屏幕"));
+		this.fitBtn && (this.isFitMode ? (this.fitBtn.innerHTML = e.AspectRatio, this.fitBtn.title = this.translate("actualSize")) : (this.fitBtn.innerHTML = e.FitToScreen, this.fitBtn.title = this.translate("fitToScreen")));
 	}
 	toggleThumbnails() {
 		this.showThumbnails = !this.showThumbnails, this.thumbScrollContainer.style.display = this.showThumbnails ? "block" : "none", this.mainCanvas.height = this.options.height - (this.showThumbnails ? this.options.thumbnailHeight : 0) - this.options.toolbarHeight, this.renderMainImage();
@@ -371,7 +513,7 @@ var e = {
 		});
 	}
 	updateFullscreenButton() {
-		this.fullscreenBtn && (this.isFullscreen ? (this.fullscreenBtn.innerHTML = e.FullscreenExit, this.fullscreenBtn.title = "退出全屏") : (this.fullscreenBtn.innerHTML = e.Fullscreen, this.fullscreenBtn.title = "切换全屏"));
+		this.fullscreenBtn && (this.isFullscreen ? (this.fullscreenBtn.innerHTML = e.FullscreenExit, this.fullscreenBtn.title = this.translate("exitFullscreen")) : (this.fullscreenBtn.innerHTML = e.Fullscreen, this.fullscreenBtn.title = this.translate("toggleFullscreen")));
 	}
 	handleFullscreenResize() {
 		if (this.isFullscreen) {
@@ -410,4 +552,4 @@ var e = {
 	}
 };
 //#endregion
-export { t as ImageViewer };
+export { n as ImageViewer };

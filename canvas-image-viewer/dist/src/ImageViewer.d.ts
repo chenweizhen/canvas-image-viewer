@@ -6,6 +6,8 @@ export declare class ImageViewer {
     private thumbCanvas;
     private overviewCanvas;
     private overviewCtx;
+    private currentLanguage;
+    private translate;
     private overviewContainer;
     private mainCtx;
     private thumbCtx;
@@ -16,6 +18,8 @@ export declare class ImageViewer {
     private fitBtn;
     private fullscreenBtn;
     private overviewBtn;
+    private leftArrow;
+    private rightArrow;
     private showThumbnails;
     private showOverview;
     private isFitMode;
@@ -29,6 +33,9 @@ export declare class ImageViewer {
     private loadingImages;
     private isFirstImageLoaded;
     private loadingAnimationId;
+    private fadeAnimationId;
+    private currentFadeAlpha;
+    private isAnimating;
     private currentIndex;
     private imageList;
     private imageState;
@@ -43,10 +50,13 @@ export declare class ImageViewer {
     private initCanvas;
     private createToolbarButton;
     private loadImages;
+    private preloadCurrentImage;
     private renderLoading;
     private renderAll;
+    private animateFadeIn;
     private renderMainImage;
     private renderThumbnails;
+    private createNavigationArrows;
     private bindEvents;
     private fillRoundRect;
     private updateScaleDisplay;
@@ -58,6 +68,10 @@ export declare class ImageViewer {
     private flipVertical;
     prev(): void;
     next(): void;
+    zoomIn(): void;
+    zoomOut(): void;
+    first(): void;
+    last(): void;
     rotate(angle?: number): void;
     resetView(): void;
     fitToScreen(): void;
