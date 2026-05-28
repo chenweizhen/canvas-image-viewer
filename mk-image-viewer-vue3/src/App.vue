@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { ImageViewer } from '@mk/canvas-image-viewer'
+import { ImageViewer } from 'mk-image-viewer'
 
 const containerRef = ref<HTMLElement | null>(null)
 let viewer: ImageViewer | null = null

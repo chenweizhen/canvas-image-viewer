@@ -8,7 +8,7 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'CanvasImageViewer',
-      fileName: 'canvas-image-viewer',
+      fileName: 'mk-image-viewer',
       formats: ['es', 'cjs', 'umd']
     },
     rollupOptions: {

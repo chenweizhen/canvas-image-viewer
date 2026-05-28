@@ -16,13 +16,13 @@
 ## 安装
 
 ```bash
-npm install canvas-image-viewer
+npm install mk-image-viewer
 ```
 
 ## 快速开始
 
 ```typescript
-import { ImageViewer } from 'canvas-image-viewer';
+import { ImageViewer } from 'mk-image-viewer';
 
 // 获取容器元素
 const container = document.getElementById('viewer-container');
@@ -204,13 +204,13 @@ A pure Canvas-based image viewer library with no framework dependencies.
 ## Installation
 
 ```bash
-npm install canvas-image-viewer
+npm install mk-image-viewer
 ```
 
 ## Quick Start
 
 ```typescript
-import { ImageViewer } from 'canvas-image-viewer';
+import { ImageViewer } from 'mk-image-viewer';
 
 // Get container element
 const container = document.getElementById('viewer-container');

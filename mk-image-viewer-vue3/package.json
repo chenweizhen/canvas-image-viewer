@@ -1,5 +1,5 @@
 {
-  "name": "canvas-image-viewer-vue3",
+  "name": "mk-image-viewer-vue3",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "vue": "^3.4.21",
-    "@mk/canvas-image-viewer": "workspace:*"
+    "mk-image-viewer": "workspace:*"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",

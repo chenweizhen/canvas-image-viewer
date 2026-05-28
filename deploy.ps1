@@ -8,7 +8,7 @@ Write-Host "=== Starting deployment process ===" -ForegroundColor Cyan
 
 # 0. Restore src directory if it was removed in previous failed run
 Write-Host "`n0. Checking and restoring src directory..." -ForegroundColor Yellow
-$srcPath = "canvas-image-viewer/src"
+$srcPath = "mk-image-viewer/src"
 if (-not (Test-Path $srcPath)) {
     Write-Host "src directory not found, restoring from git..."
     git checkout main -- $srcPath
@@ -65,8 +65,8 @@ if (-not $branchExists) {
 Write-Host "Merging main branch..."
 git merge main --no-edit
 
-# Remove canvas-image-viewer/src directory
-$srcPath = "canvas-image-viewer/src"
+# Remove mk-image-viewer/src directory
+$srcPath = "mk-image-viewer/src"
 if (Test-Path $srcPath) {
     Write-Host "Removing $srcPath..."
     Remove-Item -Path $srcPath -Recurse -Force

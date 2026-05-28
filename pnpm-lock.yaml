@@ -4,9 +4,16 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  mk-image-viewer: link:C:/Users/IT001/AppData/Local/pnpm/global/5/node_modules/mk-image-viewer
+
 importers:
 
-  .: {}
+  .:
+    dependencies:
+      mk-image-viewer:
+        specifier: link:C:/Users/IT001/AppData/Local/pnpm/global/5/node_modules/mk-image-viewer
+        version: link:C:/Users/IT001/AppData/Local/pnpm/global/5/node_modules/mk-image-viewer
 
   canvas-image-viewer:
     devDependencies:
@@ -25,9 +32,9 @@ importers:
 
   canvas-image-viewer-react:
     dependencies:
-      '@mk/canvas-image-viewer':
-        specifier: workspace:*
-        version: link:../canvas-image-viewer
+      mk-image-viewer:
+        specifier: link:C:/Users/IT001/AppData/Local/pnpm/global/5/node_modules/mk-image-viewer
+        version: link:C:/Users/IT001/AppData/Local/pnpm/global/5/node_modules/mk-image-viewer
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -53,9 +60,9 @@ importers:
 
   canvas-image-viewer-vue3:
     dependencies:
-      '@mk/canvas-image-viewer':
-        specifier: workspace:*
-        version: link:../canvas-image-viewer
+      mk-image-viewer:
+        specifier: link:C:/Users/IT001/AppData/Local/pnpm/global/5/node_modules/mk-image-viewer
+        version: link:C:/Users/IT001/AppData/Local/pnpm/global/5/node_modules/mk-image-viewer
       vue:
         specifier: ^3.4.21
         version: 3.5.34(typescript@6.0.3)

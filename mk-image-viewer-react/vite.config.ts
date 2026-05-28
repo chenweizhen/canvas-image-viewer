@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      external: ['canvas-image-viewer']
+      external: ['mk-image-viewer']
     }
   }
 })
