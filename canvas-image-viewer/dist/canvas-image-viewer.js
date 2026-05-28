@@ -17,14 +17,18 @@ var e = {
 	Scroll: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8.01266 4.56502C8.75361 4.16876 9.5587 4 11.1411 4H12.8589C14.4413 4 15.2464 4.16876 15.9873 4.56502C16.6166 4.90155 17.0985 5.38342 17.435 6.01266C17.8312 6.75361 18 7.5587 18 9.14111V14.8589C18 16.4413 17.8312 17.2464 17.435 17.9873C17.0985 18.6166 16.6166 19.0985 15.9873 19.435C15.2464 19.8312 14.4413 20 12.8589 20H11.1411C9.5587 20 8.75361 19.8312 8.01266 19.435C7.38342 19.0985 6.90155 18.6166 6.56502 17.9873C6.16876 17.2464 6 16.4413 6 14.8589V9.14111C6 7.5587 6.16876 6.75361 6.56502 6.01266C6.90155 5.38342 7.38342 4.90155 8.01266 4.56502ZM12.8589 2H11.1411C9.12721 2 8.04724 2.27848 7.06946 2.8014C6.09168 3.32432 5.32432 4.09168 4.8014 5.06946C4.27848 6.04724 4 7.12721 4 9.14111V14.8589C4 16.8728 4.27848 17.9528 4.8014 18.9305C5.32432 19.9083 6.09168 20.6757 7.06946 21.1986C8.04724 21.7215 9.12721 22 11.1411 22H12.8589C14.8728 22 15.9528 21.7215 16.9305 21.1986C17.9083 20.6757 18.6757 19.9083 19.1986 18.9305C19.7215 17.9528 20 16.8728 20 14.8589V9.14111C20 7.12721 19.7215 6.04724 19.1986 5.06946C18.6757 4.09168 17.9083 3.32432 16.9305 2.8014C15.9528 2.27848 14.8728 2 12.8589 2ZM13 6H11V11H13V6ZM7.75781 13.758L12.0005 18.0006L16.2431 13.758L14.8289 12.3438L12.0005 15.1722L9.17203 12.3438L7.75781 13.758Z\"></path></svg>",
 	Fullscreen: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8 3V5H4V9H2V3H8ZM2 21V15H4V19H8V21H2ZM22 21H16V19H20V15H22V21ZM22 9H20V5H16V3H22V9Z\"></path></svg>",
 	FullscreenExit: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z\"></path></svg>",
-	Delete: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z\"></path></svg>"
+	Delete: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z\"></path></svg>",
+	OverviewOn: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M21 3C21.5523 3 22 3.44772 22 4V11H20V5H4V19H10V21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H21ZM21 13C21.5523 13 22 13.4477 22 14V20C22 20.5523 21.5523 21 21 21H13C12.4477 21 12 20.5523 12 20V14C12 13.4477 12.4477 13 13 13H21ZM20 15H14V19H20V15Z\"></path></svg>",
+	OverviewOff: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M21 3C21.5523 3 22 3.44772 22 4V11H20V5H4V19H10V21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H21ZM21 13C21.5523 13 22 13.4477 22 14V20C22 20.5523 21.5523 21 21 21H13C12.4477 21 12 20.5523 12 20V14C12 13.4477 12.4477 13 13 13H21Z\"></path></svg>"
 }, t = class {
 	constructor(e) {
 		this.showThumbnails = !0, this.showOverview = !0, this.isFitMode = !0, this.isFullscreen = !1, this.isDraggingOverview = !1, this.currentIndex = 0, this.imageList = [], this.imageState = {
 			scale: 1,
 			x: 0,
 			y: 0,
-			rotation: 0
+			rotation: 0,
+			flipH: !1,
+			flipV: !1
 		}, this.isDragging = !1, this.lastX = 0, this.lastY = 0, this.TW = 80, this.TH = 45, this.OVERVIEW_SIZE = 150, this.options = Object.assign({
 			width: 1e3,
 			height: 650,
@@ -114,9 +118,9 @@ var e = {
 		let _ = document.createElement("div");
 		_.style.display = "flex", _.style.alignItems = "center", _.style.gap = "8px";
 		let v = this.createToolbarButton("Slideshow", () => this.toggleThumbnails());
-		v.title = "切换缩略图显示", _.appendChild(v), this.fullscreenBtn = this.createToolbarButton("Fullscreen", () => this.toggleFullscreen()), this.fullscreenBtn.title = "切换全屏", _.appendChild(this.fullscreenBtn), this.toolbarContainer.appendChild(t), this.toolbarContainer.appendChild(n), this.toolbarContainer.appendChild(_), this.overviewContainer = document.createElement("div"), this.overviewContainer.style.position = "absolute", this.overviewContainer.style.bottom = this.options.toolbarHeight + this.options.thumbnailHeight + 10 + "px", this.overviewContainer.style.right = "10px", this.overviewContainer.style.width = this.OVERVIEW_SIZE + 12 + "px", this.overviewContainer.style.background = "#2a2a2a", this.overviewContainer.style.border = "1px solid #3a3a3a", this.overviewContainer.style.borderRadius = "4px", this.overviewContainer.style.padding = "4px";
+		v.title = "切换缩略图显示", _.appendChild(v), this.overviewBtn = this.createToolbarButton("OverviewOff", () => this.toggleOverview()), this.overviewBtn.title = "切换鸟瞰图显示", _.appendChild(this.overviewBtn), this.fullscreenBtn = this.createToolbarButton("Fullscreen", () => this.toggleFullscreen()), this.fullscreenBtn.title = "切换全屏", _.appendChild(this.fullscreenBtn), this.toolbarContainer.appendChild(t), this.toolbarContainer.appendChild(n), this.toolbarContainer.appendChild(_), this.overviewContainer = document.createElement("div"), this.overviewContainer.style.position = "absolute", this.overviewContainer.style.bottom = this.options.toolbarHeight + this.options.thumbnailHeight + 10 + "px", this.overviewContainer.style.right = "10px", this.overviewContainer.style.background = "#2a2a2a", this.overviewContainer.style.border = "1px solid #3a3a3a", this.overviewContainer.style.borderRadius = "4px", this.overviewContainer.style.padding = "4px 8px";
 		let y = document.createElement("div");
-		y.style.display = "flex", y.style.justifyContent = "space-between", y.style.alignItems = "center", y.style.padding = "2px 4px", y.style.marginBottom = "4px";
+		y.style.display = "flex", y.style.justifyContent = "space-between", y.style.alignItems = "center", y.style.padding = "2px 0px", y.style.marginBottom = "4px";
 		let b = document.createElement("span");
 		b.style.color = "#888888", b.style.fontSize = "12px", b.textContent = "鸟瞰图", y.appendChild(b);
 		let x = document.createElement("button");
@@ -154,7 +158,7 @@ var e = {
 		let e = this.mainCtx, t = this.mainCanvas, n = this.imageList[this.currentIndex];
 		if (!n) return;
 		let r = this.imageState;
-		e.clearRect(0, 0, t.width, t.height), e.save(), e.translate(t.width / 2, t.height / 2), e.rotate(r.rotation * Math.PI / 180);
+		e.clearRect(0, 0, t.width, t.height), e.save(), e.translate(t.width / 2, t.height / 2), e.rotate(r.rotation * Math.PI / 180), r.flipH && e.scale(-1, 1), r.flipV && e.scale(1, -1);
 		let i = n.width * r.scale, a = n.height * r.scale;
 		e.drawImage(n, -i / 2 + r.x, -a / 2 + r.y, i, a), e.restore(), this.updateScaleDisplay(), this.renderOverview();
 	}
@@ -174,7 +178,9 @@ var e = {
 		}), this.mainCanvas.addEventListener("mousedown", (e) => {
 			this.isDragging = !0, this.lastX = e.clientX, this.lastY = e.clientY, this.mainCanvas.style.cursor = "grabbing";
 		}), window.addEventListener("mousemove", (e) => {
-			this.isDragging && (this.imageState.x += e.clientX - this.lastX, this.imageState.y += e.clientY - this.lastY, this.lastX = e.clientX, this.lastY = e.clientY, this.renderMainImage());
+			if (!this.isDragging) return;
+			let t = e.clientX - this.lastX, n = e.clientY - this.lastY;
+			this.imageState.flipH && (t = -t), this.imageState.flipV && (n = -n), this.imageState.x += t, this.imageState.y += n, this.lastX = e.clientX, this.lastY = e.clientY, this.renderMainImage();
 		}), window.addEventListener("mouseup", () => {
 			this.isDragging = !1, this.mainCanvas.style.cursor = "grab";
 		}), this.mainCanvas.addEventListener("wheel", (e) => {
@@ -198,9 +204,9 @@ var e = {
 			let n = this.imageList[this.currentIndex];
 			if (!n) return;
 			let r = n.width / n.height, i = this.overviewCanvas.width / this.overviewCanvas.height, a, o;
-			r > i ? (a = this.overviewCanvas.width, o = this.overviewCanvas.width / r) : (o = this.overviewCanvas.height, a = this.overviewCanvas.height * r);
-			let s = n.width / a, c = n.height / o, l = (e.clientX - this.lastX) * s, u = (e.clientY - this.lastY) * c;
-			this.imageState.x -= l * this.imageState.scale, this.imageState.y -= u * this.imageState.scale, this.lastX = e.clientX, this.lastY = e.clientY, this.renderMainImage();
+			r > i ? (a = this.overviewCanvas.width, o = this.overviewCanvas.width / r, (this.overviewCanvas.height - o) / 2) : (o = this.overviewCanvas.height, a = this.overviewCanvas.height * r, (this.overviewCanvas.width - a) / 2);
+			let s = e.clientX - this.lastX, c = e.clientY - this.lastY, l = s * (n.width / a), u = c * (n.height / o), d = this.mainCanvas.width, f = this.mainCanvas.height, p = this.imageState.scale, m = d / p, h = f / p, g = (-this.imageState.x - d / 2 + n.width * p / 2) / p + l, _ = (-this.imageState.y - f / 2 + n.height * p / 2) / p + u, v = Math.max(0, Math.min(n.width - m, g)), y = Math.max(0, Math.min(n.height - h, _)), b = v - (-this.imageState.x - d / 2 + n.width * p / 2) / p, x = y - (-this.imageState.y - f / 2 + n.height * p / 2) / p;
+			this.imageState.x -= b * p, this.imageState.y -= x * p, this.lastX = e.clientX, this.lastY = e.clientY, this.renderMainImage();
 		}), window.addEventListener("mouseup", () => {
 			this.isDraggingOverview &&= !1;
 		});
@@ -227,15 +233,10 @@ var e = {
 		t >= .1 && t <= 10 && (this.imageState.scale = t, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage());
 	}
 	flipHorizontal() {
-		this.imageState.scale = -this.imageState.scale, this.renderMainImage();
+		this.imageState.flipH = !this.imageState.flipH, this.renderMainImage();
 	}
 	flipVertical() {
-		let e = this.mainCtx, t = this.mainCanvas, n = this.imageList[this.currentIndex];
-		if (!n) return;
-		let r = this.imageState;
-		e.clearRect(0, 0, t.width, t.height), e.save(), e.translate(t.width / 2, t.height / 2), e.rotate(r.rotation * Math.PI / 180), e.scale(1, -1);
-		let i = n.width * Math.abs(r.scale), a = n.height * Math.abs(r.scale);
-		e.drawImage(n, -i / 2 + r.x, -a / 2 + r.y, i, a), e.restore(), this.updateScaleDisplay();
+		this.imageState.flipV = !this.imageState.flipV, this.renderMainImage();
 	}
 	prev() {
 		this.currentIndex = (this.currentIndex - 1 + this.imageList.length) % this.imageList.length, this.updatePageInfo(), this.updateImageInfo(), this.isFitMode ? this.fitToScreen() : this.resetView();
@@ -251,7 +252,9 @@ var e = {
 			scale: 1,
 			x: 0,
 			y: 0,
-			rotation: 0
+			rotation: 0,
+			flipH: !1,
+			flipV: !1
 		}, this.isFitMode = !1, this.updateFitButton(), this.renderMainImage();
 	}
 	fitToScreen() {
@@ -307,26 +310,31 @@ var e = {
 		this.imageList.length > 0 && (this.renderThumbnails(), this.isFitMode ? this.fitToScreen() : this.resetView());
 	}
 	toggleOverview() {
-		this.showOverview = !this.showOverview, this.overviewContainer.style.display = this.showOverview ? "block" : "none";
+		this.showOverview = !this.showOverview, this.overviewContainer.style.display = this.showOverview ? "block" : "none", this.overviewBtn.innerHTML = this.showOverview ? e.OverviewOff : e.OverviewOn;
 	}
 	renderOverview() {
 		if (!this.showOverview) return;
 		let e = this.overviewCtx, t = this.overviewCanvas, n = this.imageList[this.currentIndex];
 		if (!n) return;
+		let r = this.imageState;
 		e.clearRect(0, 0, t.width, t.height);
-		let r = n.width / n.height, i = t.width / t.height, a, o, s = 0, c = 0;
-		r > i ? (a = t.width, o = t.width / r, c = (t.height - o) / 2) : (o = t.height, a = t.height * r, s = (t.width - a) / 2), e.drawImage(n, s, c, a, o);
-		let l = this.imageState, u = l.scale, d = this.mainCanvas.width, f = this.mainCanvas.height, p = n.width * u, m = n.height * u;
-		d / 2, f / 2;
-		let h = -p / 2 + l.x, g = -m / 2 + l.y, _ = -h / u, v = -g / u, y = d / u, b = f / u, x = s + _ / n.width * a, S = c + v / n.height * o, C = y / n.width * a, w = b / n.height * o;
-		e.fillStyle = "rgba(0, 153, 255, 0.3)", e.fillRect(x, S, C, w), e.strokeStyle = "#0099ff", e.lineWidth = 1, e.strokeRect(x, S, C, w);
+		let i = n.width / n.height, a = t.width / t.height, o, s, c = 0, l = 0;
+		i > a ? (o = t.width, s = t.width / i, l = (t.height - s) / 2) : (s = t.height, o = t.height * i, c = (t.width - o) / 2), e.save();
+		let u = t.width / 2, d = t.height / 2;
+		e.translate(u, d), r.flipH && e.scale(-1, 1), r.flipV && e.scale(1, -1), e.drawImage(n, c - u, l - d, o, s), e.restore();
+		let f = r.scale, p = this.mainCanvas.width, m = this.mainCanvas.height, h = n.width * f, g = n.height * f, _ = p / 2, v = m / 2, y = -h / 2 + r.x + _, b = -g / 2 + r.y + v, x = -y / f, S = -b / f, C = p / f, w = m / f;
+		C = Math.min(C, n.width), w = Math.min(w, n.height), x = Math.max(0, Math.min(n.width - C, x)), S = Math.max(0, Math.min(n.height - w, S)), r.flipH && (x = n.width - x - C), r.flipV && (S = n.height - S - w);
+		let T = c + x / n.width * o, E = l + S / n.height * s, D = C / n.width * o, O = w / n.height * s;
+		e.fillStyle = "rgba(0, 153, 255, 0.3)", e.fillRect(T, E, D, O), e.strokeStyle = "#0099ff", e.lineWidth = 1, e.strokeRect(T, E, D, O);
 	}
 	destroy() {
 		this.container.innerHTML = "", this.imageList = [], this.imageState = {
 			scale: 1,
 			x: 0,
 			y: 0,
-			rotation: 0
+			rotation: 0,
+			flipH: !1,
+			flipV: !1
 		};
 	}
 };

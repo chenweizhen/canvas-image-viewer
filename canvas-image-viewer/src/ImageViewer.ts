@@ -17,6 +17,7 @@ export class ImageViewer {
   private infoDisplay!: HTMLElement
   private fitBtn!: HTMLButtonElement
   private fullscreenBtn!: HTMLButtonElement
+  private overviewBtn!: HTMLButtonElement
   private showThumbnails = true
   private showOverview = true
   private isFitMode = true
@@ -25,7 +26,7 @@ export class ImageViewer {
 
   private currentIndex = 0
   private imageList: HTMLImageElement[] = []
-  private imageState: ImageState = { scale: 1, x: 0, y: 0, rotation: 0 }
+  private imageState: ImageState = { scale: 1, x: 0, y: 0, rotation: 0, flipH: false, flipV: false }
 
   private isDragging = false
   private lastX = 0
@@ -292,6 +293,10 @@ export class ImageViewer {
     thumbToggleBtn.title = '切换缩略图显示'
     rightSection.appendChild(thumbToggleBtn)
 
+    this.overviewBtn = this.createToolbarButton('OverviewOff', () => this.toggleOverview())
+    this.overviewBtn.title = '切换鸟瞰图显示'
+    rightSection.appendChild(this.overviewBtn)
+
     this.fullscreenBtn = this.createToolbarButton('Fullscreen', () => this.toggleFullscreen())
     this.fullscreenBtn.title = '切换全屏'
     rightSection.appendChild(this.fullscreenBtn)
@@ -304,17 +309,17 @@ export class ImageViewer {
     this.overviewContainer.style.position = 'absolute'
     this.overviewContainer.style.bottom = (this.options.toolbarHeight + this.options.thumbnailHeight + 10) + 'px'
     this.overviewContainer.style.right = '10px'
-    this.overviewContainer.style.width = (this.OVERVIEW_SIZE + 12) + 'px'
+    //this.overviewContainer.style.width = (this.OVERVIEW_SIZE + 12) + 'px'
     this.overviewContainer.style.background = '#2a2a2a'
     this.overviewContainer.style.border = '1px solid #3a3a3a'
     this.overviewContainer.style.borderRadius = '4px'
-    this.overviewContainer.style.padding = '4px'
+    this.overviewContainer.style.padding = '4px 8px'
 
     const overviewHeader = document.createElement('div')
     overviewHeader.style.display = 'flex'
     overviewHeader.style.justifyContent = 'space-between'
     overviewHeader.style.alignItems = 'center'
-    overviewHeader.style.padding = '2px 4px'
+    overviewHeader.style.padding = '2px 0px'
     overviewHeader.style.marginBottom = '4px'
 
     const overviewTitle = document.createElement('span')
@@ -418,6 +423,13 @@ export class ImageViewer {
     ctx.translate(canvas.width / 2, canvas.height / 2)
     ctx.rotate((state.rotation * Math.PI) / 180)
 
+    if (state.flipH) {
+      ctx.scale(-1, 1)
+    }
+    if (state.flipV) {
+      ctx.scale(1, -1)
+    }
+
     const w = img.width * state.scale
     const h = img.height * state.scale
     ctx.drawImage(img, -w / 2 + state.x, -h / 2 + state.y, w, h)
@@ -498,8 +510,19 @@ export class ImageViewer {
 
     window.addEventListener('mousemove', (e) => {
       if (!this.isDragging) return
-      this.imageState.x += e.clientX - this.lastX
-      this.imageState.y += e.clientY - this.lastY
+
+      let deltaX = e.clientX - this.lastX
+      let deltaY = e.clientY - this.lastY
+
+      if (this.imageState.flipH) {
+        deltaX = -deltaX
+      }
+      if (this.imageState.flipV) {
+        deltaY = -deltaY
+      }
+
+      this.imageState.x += deltaX
+      this.imageState.y += deltaY
       this.lastX = e.clientX
       this.lastY = e.clientY
       this.renderMainImage()
@@ -564,8 +587,8 @@ export class ImageViewer {
       if (!this.isDraggingOverview) return
 
       const rect = this.overviewCanvas.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
+      const mouseX = e.clientX - rect.left
+      const mouseY = e.clientY - rect.top
 
       const img = this.imageList[this.currentIndex]
       if (!img) return
@@ -575,23 +598,43 @@ export class ImageViewer {
 
       let drawW: number
       let drawH: number
+      let drawX = 0
+      let drawY = 0
 
       if (imgRatio > canvasRatio) {
         drawW = this.overviewCanvas.width
         drawH = this.overviewCanvas.width / imgRatio
+        drawY = (this.overviewCanvas.height - drawH) / 2
       } else {
         drawH = this.overviewCanvas.height
         drawW = this.overviewCanvas.height * imgRatio
+        drawX = (this.overviewCanvas.width - drawW) / 2
       }
 
-      const scaleX = img.width / drawW
-      const scaleY = img.height / drawH
+      const deltaX = e.clientX - this.lastX
+      const deltaY = e.clientY - this.lastY
 
-      const deltaX = (e.clientX - this.lastX) * scaleX
-      const deltaY = (e.clientY - this.lastY) * scaleY
+      const overviewDeltaX = deltaX * (img.width / drawW)
+      const overviewDeltaY = deltaY * (img.height / drawH)
 
-      this.imageState.x -= deltaX * this.imageState.scale
-      this.imageState.y -= deltaY * this.imageState.scale
+      const mainW = this.mainCanvas.width
+      const mainH = this.mainCanvas.height
+      const scale = this.imageState.scale
+
+      const visibleW = mainW / scale
+      const visibleH = mainH / scale
+
+      const newVisibleX = (-this.imageState.x - mainW / 2 + (img.width * scale) / 2) / scale + overviewDeltaX
+      const newVisibleY = (-this.imageState.y - mainH / 2 + (img.height * scale) / 2) / scale + overviewDeltaY
+
+      const clampedX = Math.max(0, Math.min(img.width - visibleW, newVisibleX))
+      const clampedY = Math.max(0, Math.min(img.height - visibleH, newVisibleY))
+
+      const deltaClampedX = clampedX - ((-this.imageState.x - mainW / 2 + (img.width * scale) / 2) / scale)
+      const deltaClampedY = clampedY - ((-this.imageState.y - mainH / 2 + (img.height * scale) / 2) / scale)
+
+      this.imageState.x -= deltaClampedX * scale
+      this.imageState.y -= deltaClampedY * scale
 
       this.lastX = e.clientX
       this.lastY = e.clientY
@@ -655,31 +698,13 @@ export class ImageViewer {
   }
 
   private flipHorizontal() {
-    this.imageState.scale = -this.imageState.scale
+    this.imageState.flipH = !this.imageState.flipH
     this.renderMainImage()
   }
 
   private flipVertical() {
-    const ctx = this.mainCtx
-    const canvas = this.mainCanvas
-    const img = this.imageList[this.currentIndex]
-    if (!img) return
-
-    const state = this.imageState
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.save()
-
-    ctx.translate(canvas.width / 2, canvas.height / 2)
-    ctx.rotate((state.rotation * Math.PI) / 180)
-    ctx.scale(1, -1)
-
-    const w = img.width * Math.abs(state.scale)
-    const h = img.height * Math.abs(state.scale)
-    ctx.drawImage(img, -w / 2 + state.x, -h / 2 + state.y, w, h)
-
-    ctx.restore()
-    this.updateScaleDisplay()
+    this.imageState.flipV = !this.imageState.flipV
+    this.renderMainImage()
   }
 
   public prev() {
@@ -710,7 +735,7 @@ export class ImageViewer {
   }
 
   public resetView() {
-    this.imageState = { scale: 1, x: 0, y: 0, rotation: 0 }
+    this.imageState = { scale: 1, x: 0, y: 0, rotation: 0, flipH: false, flipV: false }
     this.isFitMode = false
     this.updateFitButton()
     this.renderMainImage()
@@ -899,6 +924,7 @@ export class ImageViewer {
   public toggleOverview() {
     this.showOverview = !this.showOverview
     this.overviewContainer.style.display = this.showOverview ? 'block' : 'none'
+    this.overviewBtn.innerHTML = this.showOverview ? Icons.OverviewOff : Icons.OverviewOn
   }
 
   public renderOverview() {
@@ -909,6 +935,8 @@ export class ImageViewer {
     const img = this.imageList[this.currentIndex]
 
     if (!img) return
+
+    const state = this.imageState
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -930,9 +958,24 @@ export class ImageViewer {
       drawX = (canvas.width - drawW) / 2
     }
 
-    ctx.drawImage(img, drawX, drawY, drawW, drawH)
+    ctx.save()
 
-    const state = this.imageState
+    const centerX = canvas.width / 2
+    const centerY = canvas.height / 2
+
+    ctx.translate(centerX, centerY)
+
+    if (state.flipH) {
+      ctx.scale(-1, 1)
+    }
+    if (state.flipV) {
+      ctx.scale(1, -1)
+    }
+
+    ctx.drawImage(img, drawX - centerX, drawY - centerY, drawW, drawH)
+
+    ctx.restore()
+
     const scale = state.scale
     const mainW = this.mainCanvas.width
     const mainH = this.mainCanvas.height
@@ -943,13 +986,26 @@ export class ImageViewer {
     const canvasCenterX = mainW / 2
     const canvasCenterY = mainH / 2
 
-    const imgLeft = -imgDisplayW / 2 + state.x
-    const imgTop = -imgDisplayH / 2 + state.y
+    const imgLeftOnCanvas = -imgDisplayW / 2 + state.x + canvasCenterX
+    const imgTopOnCanvas = -imgDisplayH / 2 + state.y + canvasCenterY
 
-    const visibleX = -imgLeft / scale
-    const visibleY = -imgTop / scale
-    const visibleW = mainW / scale
-    const visibleH = mainH / scale
+    let visibleX = -imgLeftOnCanvas / scale
+    let visibleY = -imgTopOnCanvas / scale
+    let visibleW = mainW / scale
+    let visibleH = mainH / scale
+
+    visibleW = Math.min(visibleW, img.width)
+    visibleH = Math.min(visibleH, img.height)
+
+    visibleX = Math.max(0, Math.min(img.width - visibleW, visibleX))
+    visibleY = Math.max(0, Math.min(img.height - visibleH, visibleY))
+
+    if (state.flipH) {
+      visibleX = img.width - visibleX - visibleW
+    }
+    if (state.flipV) {
+      visibleY = img.height - visibleY - visibleH
+    }
 
     const rectX = drawX + (visibleX / img.width) * drawW
     const rectY = drawY + (visibleY / img.height) * drawH
@@ -967,6 +1023,6 @@ export class ImageViewer {
   public destroy() {
     this.container.innerHTML = ''
     this.imageList = []
-    this.imageState = { scale: 1, x: 0, y: 0, rotation: 0 }
+    this.imageState = { scale: 1, x: 0, y: 0, rotation: 0, flipH: false, flipV: false }
   }
 }

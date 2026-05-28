@@ -15,6 +15,7 @@ export declare class ImageViewer {
     private infoDisplay;
     private fitBtn;
     private fullscreenBtn;
+    private overviewBtn;
     private showThumbnails;
     private showOverview;
     private isFitMode;

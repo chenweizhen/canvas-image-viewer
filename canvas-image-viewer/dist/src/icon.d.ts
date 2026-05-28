@@ -17,4 +17,6 @@ export declare const Icons: {
     Fullscreen: string;
     FullscreenExit: string;
     Delete: string;
+    OverviewOn: string;
+    OverviewOff: string;
 };

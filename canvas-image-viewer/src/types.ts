@@ -14,4 +14,6 @@ export interface ImageState {
   x: number;
   y: number;
   rotation: number;
+  flipH: boolean;
+  flipV: boolean;
 }
