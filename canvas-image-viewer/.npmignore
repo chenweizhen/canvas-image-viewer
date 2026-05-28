@@ -1,0 +1,11 @@
+# 排除源码目录
+src/
+tsconfig.json
+vite.config.ts
+pnpm-lock.yaml
+
+# 排除其他文件
+.git/
+.gitignore
+*.log
+node_modules/

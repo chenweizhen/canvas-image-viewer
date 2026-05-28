@@ -4,7 +4,9 @@
   "description": "A pure Canvas-based image viewer library with no framework dependencies",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "main": "./dist/canvas-image-viewer.cjs",
   "module": "./dist/canvas-image-viewer.js",
@@ -18,7 +20,11 @@
   },
   "scripts": {
     "build": "vite build",
-    "prepublishOnly": "pnpm build"
+    "prepublishOnly": "pnpm build",
+    "publish:npm": "npm publish",
+    "push:gitee": "git push gitee main",
+    "push:github": "git push github main",
+    "push:all": "git push gitee main && git push github main"
   },
   "keywords": [
     "canvas",
@@ -26,10 +32,23 @@
     "viewer",
     "gallery",
     "photo",
-    "viewer"
+    "viewer",
+    "image-viewer",
+    "canvas-viewer"
   ],
-  "author": "",
+  "author": {
+    "name": "mikenchen",
+    "email": "chenweizhen@126.com"
+  },
   "license": "MIT",
+  "homepage": "https://github.com/chenweizhen/canvas-image-viewer",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenweizhen/canvas-image-viewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chenweizhen/canvas-image-viewer/issues"
+  },
   "devDependencies": {
     "@types/node": "^25.9.1",
     "typescript": "^6.0.3",
