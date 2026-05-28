@@ -23,8 +23,9 @@
     "prepublishOnly": "pnpm build",
     "publish:npm": "npm publish",
     "push:gitee": "git push gitee main",
-    "push:github": "git push github main",
-    "push:all": "git push gitee main && git push github main"
+    "push:github": "git push github release",
+    "push:all": "git push gitee main && git push github release",
+    "deploy": "powershell -ExecutionPolicy Bypass -File publish.ps1"
   },
   "keywords": [
     "canvas",
